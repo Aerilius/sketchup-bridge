@@ -1,15 +1,15 @@
-module AE
+module AuthorName
 
-  module BridgeLibrary
+  module SampleExtension
 
     # Optionally requires 'json.rb'
     # Requires modules Sketchup, UI
 
     class Bridge
       # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
-      # and dialogs. It supports any amount of parameters of any JSON-compatible type and is uses Promises to 
+      # and dialogs. It supports any amount of parameters of any JSON-compatible type and it uses Promises to 
       # asynchronously access return values on success or handle failures.
-      #
+      # 
       # Ruby methods:
       # - `Bridge.new(dialog)`
       #   Creates a Bridge instance for a UI::WebDialog or UI::HtmlDialog.
@@ -22,41 +22,19 @@ module AE
       # - `Bridge#get(js_function_name, *arguments).then{ |result| }`
       #   Invokes a JavaScript function and returns a promise that will be resolved 
       #   with the JavaScript function's return value.
-      #
+      # 
       # JavaScript functions:
       # - `Bridge.call(rbCallbackName, ...arguments)`
-      #   Invokes a Ruby callback.
+      #   Invokes a Ruby callback with multiple arguments.
       # - `Bridge.get(rbCallbackName, ...arguments).then(function (result) { })`
       #   Invokes a Ruby callback and returns a promise that will be resolved 
       #   with the callback's return value.
-      # - `Bridge.puts(object)`
+      # - `Bridge.puts(stringOrObject)`
       #   Shorthand to print a string/object to the Ruby console.
       # - `Bridge.error(errorObject)`
       #   Shorthand to print an error to the Ruby console.
-      #
-      # Usage:
-      #
-      # On the Ruby side:
-      # @example
-      #   bridge = Bridge.new(dialog)
-      #   bridge.on('do_calculation'){ |deferred, length, width|
-      #     if validate(length) && validate(width)
-      #      result = calculate(length)
-      #      deferred.resolve(result)
-      #     else
-      #       deferred.reject('The input is not valid.')
-      #     end
-      #   }
-      # On the JavaScript side:
-      # @example
-      #   var promise = Bridge.get('do_calculation', length, width);
-      #   promise.then(function (result) {
-      #     $('#resultField').text(result);
-      #   }, function (failureReason) {
-      #     $('#inputLength').addClass('invalid');
-      #     $('#inputWidth').addClass('invalid');
-      #     alert(failureReason);
-      #   });
+      # 
+      # Github project: https://github.com/Aerilius/sketchup-bridge/
 
       class Promise
         # A simple promise implementation to follow the ES6 (JavaScript) Promise specification:

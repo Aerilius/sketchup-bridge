@@ -1,50 +1,95 @@
-# SketchUp Bridge: A bidirectional communication system between WebDialogs and the Ruby environment
+# SketchUp Bridge: A bidirectional communication system between JavaScript and the Ruby environment
 
-[![GitHub](http://img.shields.io/badge/github-aerilius/sketchup--bridge-blue.svg)](http://github.com/aerilius/skp-bridge)
+[![GitHub](http://img.shields.io/badge/github-aerilius/sketchup--bridge-blue.svg)](http://github.com/aerilius/sketchup-bridge)
 [![License](http://img.shields.io/badge/license-MIT-yellowgreen.svg)](#license)
 
 ## Summary
 
-This Bridge provides an intuitive and reliable communication in both directions with any amount of parameters of any JSON-compatible type and a way to access the returned value. It avoids errors that occur with SketchUp's webdialog mechanism. It is based on Promises which allow easy asynchronous and delayed callbacks for both success and failure.
+This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment and dialogs. It supports any amount of parameters of any JSON-compatible type and it uses Promises to asynchronously access return values on success or handle failures.
 
-The callback mechanism provided by SketchUp with a custom protocol handler `skp:` has several deficiencies:
+> **Table of contents**
+> 
+> * [API Overview](#overview)
+> * [Background](#background)
+> * [FAQ](#faq)
+> * [Usage](#usage)
+> * [References](#references)
 
- * Inproper Unicode support; looses properly escaped calls containing '; drops repeated properly escaped backslashes.
- * [Maximum URL length](https://support.microsoft.com/en-us/kb/208427) in the Windows version of SketchUp is 2083.
- * Asynchronous on OSX (it does not wait for SketchUp to receive a precendent call which can get lost).
- * Supports only one string parameter that must be escaped. Manual splitting and conversion into non-string types is a common source of errors.
+## API Overview <a id="overview"></a>
 
-(as documented here: https://github.com/thomthom/sketchup-webdialogs-the-lost-manual)
+Ruby methods:
+- `Bridge.new(dialog)`  
+  Creates a Bridge instance for a UI::WebDialog or UI::HtmlDialog.
+- `Bridge.decorate(dialog)`  
+  Alternatively adds the Bridge methods to a UI::WebDialog or UI::HtmlDialog.
+- `Bridge#on(callbackname) { |deferred, *arguments| }`  
+  Registers a callback on the Bridge.
+- `Bridge#call(js_function_name, *arguments)`  
+  Invokes a JavaScript function with multiple arguments.
+- `Bridge#get(js_function_name, *arguments).then{ |result| }`  
+  Invokes a JavaScript function and returns a promise that will be resolved with the JavaScript function's return value.
 
-## Why not use the `UI::WebDialog` skp: protocol directly?
+JavaScript functions:
+- `Bridge.call(rbCallbackName, ...arguments)`  
+  Invokes a Ruby callback with multiple arguments.
+- `Bridge.get(rbCallbackName, ...arguments).then(function (result) { })`  
+  Invokes a Ruby callback and returns a promise that will be resolved 
+  with the callback's return value.
+- `Bridge.puts(stringOrObject)`  
+  Shorthand to print a string/object to the Ruby console.
+- `Bridge.error(errorObject)`  
+  Shorthand to print an error to the Ruby console.
 
-…Or why you _should_ use a library like [this](http://github.com/aerilius/skp-bridge) or [SKUI](https://github.com/thomthom/SKUI) or any other that provides a comparable solution: By using the `skp:` protocol you risk to jump through the same problems that many developers before you have struggled with. The getting started examples guide new developers using `window.location = "skp:" + "some_callback@" + …` all over in the code base. Once your project grows bigger, this becomes not only hard to read, but also hard to maintain (edit in many places) and error-prone (string splitting/parsing). As soon as you need to convert parameters or pass many parameters, you are about to re-discover problems for which you have already found here a complete and reusable solution.
+## Background <a id="background"></a>
 
-## Why does `UI::HtmlDialog` (SketchUp 2017+) not solve the problems?
+SketchUp has two classes for creating UI dialogs:
+- The deprecated `UI::WebDialog` using the operating system's browser engine.
+  JavaScript functions can be called with [`dialog.execute_script(string)`](http://ruby.sketchup.com/UI/WebDialog.html#execute_script-instance_method) and Ruby callbacks are triggered with [`window.location = 'skp:' + callbackname + '@' + parameter_string`](http://ruby.sketchup.com/UI/WebDialog.html#add_action_callback-instance_method) which has limitations with maximal URL length, Unicode encoding/character loss and requires the developer to manually perform (de)serialization and parameter splitting.
+- The new `UI::HtmlDialog` using an embedded Chromium browser with modern JavaScript.
+  JavaScript functions can be called with [`dialog.execute_script(string)`](http://ruby.sketchup.com/UI/HtmlDialog.html#execute_script-instance_method) and Ruby callbacks are triggered with [`sketchup.callbackname(...parameters)`](http://ruby.sketchup.com/UI/HtmlDialog.html#add_action_callback-instance_method), which now allows any amount of JSON-compatible parameters.
 
-It solves most problems but it has two drawbacks. Firstly, callbacks are now completely asynchronous, but the HtmlDialog API has not been built for asynchronicity (for example in `sketchup.callbackname({onCompleted: function})` the `onCompleted` JavaScript callback is called without the Ruby return values). This makes it hard to pass data from a Ruby callback back into the same JavaScript function. Secondly, `dialog.get_element_value` without replacement. Thirdly, `execute_script`
-still gives pitfalls for encoding problems. Still, many users use SketchUp versions &lt; 2017 and do not benefit the improvements. With this library you can use the same code and support both WebDialogs and HtmlDialogs.
+WebDialogs had several problems that are deeply covered in the [Lost Manual](https://github.com/thomthom/sketchup-webdialogs-the-lost-manual). With HtmlDialog, developers still face two major difficulties that cause people to spend over and over again development time to build their own solutions instead of just building extensions:
+- There is not yet a direct **foreign function invocation** from Ruby to JavaScript (analog to JavaScript to Ruby: `sketchup.callbackname()`). While developers can use `execute_script`, they have to take care every single time about **encoding parameters** properly into a valid JavaScript string.
+- **Continuous control flow** is still broken into pieces because of asynchronicity. While it is possible to invoke a function and pass data from either side, it is not easy to communicate back and forth in a continuous manner (like synchronous code): `JavaScript→Ruby→JavaScript→…`  
+  `sketchup.callbackname(...parameters, { 'onCompleted': function () {} })` allows to invoke a JavaScript function after the Ruby callback completed, but it neither transfers the Ruby return value nor does it give feedback about success/failure.
 
-## Features
+## FAQ <a id="faq"></a>
 
-**1. Any amount of parameters**: You can just pass parameters to the Bridge and rest assured to receive them on the JavaScript or Ruby side without worrying about turning them to string or splitting the string again.
+### Why not use the `UI::WebDialog` skp: protocol directly?
 
-**2. Preserves type of parameters**: Any basic, JSON-compatible types are mapped between Ruby and JavaScript.  
+…Or why you _should_ use a library like [this](http://github.com/aerilius/sketchup-bridge) or [SKUI](https://github.com/thomthom/SKUI) or any other that provides a comparable solution: By using the `skp:` protocol you risk to jump through the same problems that many developers before you have struggled with. The official getting started examples guide new developers using `window.location = "skp:" + "some_callback@" + …` all over in the code base instead of abstracting it in a function. Once your project grows bigger, this becomes not only hard to read, but also hard to maintain (edit in many places) and error-prone (string splitting/parsing). As soon as you need to convert parameters or pass many parameters, you are about to re-discover problems for which you have already found a complete and reusable solution here.
+
+### Why does `UI::HtmlDialog` (SketchUp 2017+) not solve the problems?
+
+It solves most problems but it still has some drawbacks. Firstly, callbacks are now completely asynchronous, but the HtmlDialog API has not been designed for asynchronicity (for example in `sketchup.callbackname({onCompleted: function})` the `onCompleted` JavaScript callback is called without the Ruby return values). This makes it hard to pass data from a Ruby callback back into the same JavaScript function. Secondly, `dialog.get_element_value` has been removed without replacement. Thirdly, `execute_script` still causes pitfalls to many developers due to encoding problems. Moreover many users use SketchUp versions &lt; 2017 and do not benefit from the improvements.
+
+### Why Promises?
+
+[Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) help us to deal with asynchronous programming. 
+- Compared to the callback function pattern (callback at the end within the parameters list like `onCompleted`), callbacks are attached onto the returned promise object, which avoids clashes in the parameters list.
+- Promises provide two feedback channels for success and failure. So the developer can decide whether to handle errors (or some errors) on the Ruby side or JavaScript side.
+- Promises work with modern JavaScript [`async` and `await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await).
+
+### Features
+
+**1. Any amount of parameters** (compared to WebDialog): You can just pass parameters to the Bridge and rest assured to receive them on the JavaScript or Ruby side without worrying about turning them to string or splitting the string again.
+
+**2. Preserves type of parameters** (compared to WebDialog): Any basic, JSON-compatible types are mapped between Ruby and JavaScript.  
      Ruby Hashes `{:key => "value"}` become JavaScript Object literals `{"key": "value"}`  
      Ruby Arrays `[1, 2, 3, "string", true]` become JavaScript arrays `[1, 2, 3, "string", true]`  
      Ruby `nil` becomes `null`…
 
 **3. Provides bidirectional callbacks**: Once your JavaScript code has invoked a callback on the Ruby side, it can again invoke a callback on the JavaScript side. Similarly from the Ruby side, you can request the result of a JavaScript function and get the result returned into a Ruby callback.
 
-**4. Asynchronous callbacks**: Bridge is built with asynchronism in mind. If you do external processing or call a web service or do any other delayed operation like a user interacting with a Tool, you may nevertheless want to return the result.
+**4. Asynchronous callbacks**: Bridge is built with asynchronicity in mind. If you do external processing or call a web service or do any other delayed operation like having the user interact with a Tool, you may nevertheless want to return the result when it is available.
 
-**5. Complete error and exception handling**: Where ever an exception occurs, it will not anymore go unnoticed and just do nothing. You can properly handle success and failures, like giving users feedback about invalid input. Or you can redirect all errors from both JavaScript and Ruby to the Ruby Console.
+**5. Complete error and exception handling**: Whereever an exception occurs, it will not anymore go unnoticed and just do nothing. You can properly handle success and failures, like giving users feedback about invalid input. Or you can redirect all errors from both JavaScript and Ruby to the Ruby Console.
 
 **6. Backwards compatibility**: Using the same code base, you can support both `UI::WebDialog` and `UI::HtmlDialog`.
 
-## Usage
+## Usage <a id="usage"></a>
 
-This library is stand-alone and focusses on doing WebDialog communication right. It does not aim to "fix" or "patch" other shortcomings of webdialogs or modify webdialog behavior (sizing etc.).
+This library is stand-alone and focusses on Ruby↔JavaScript communication. It does not impose a Dialog subclass or aim to "fix" or "patch" other issues or modify dialog behavior (sizing etc.).
 
 ### Embedding into your extension
 
@@ -53,141 +98,38 @@ This library is stand-alone and focusses on doing WebDialog communication right.
 3. In your html file, add a script tag that loads the file `bridge.js` (considering your own folder structure) like:  
    `<script src="bridge.js"></script>`
 
-### 
-
-To create a new bridge, you initialize it with the dialog to which it should be linked:
-
-    @dialog = UI::WebDialog.new("My Dialog")
-    @bridge = Bridge.new(dialog)
-    
-For convenience, you can call the bridge's methods directly on the webdialog if you do instead:
-
-    Bridge.decorate(@dialog)
-    @dialog.on("fromJS") { … }
-    
-There are Ruby methods to register and unregister callbacks on the webdialog:
- 
-    @bridge.on("callbackName") { |dlg, parameter1, parameter2, *more_parameters|
-      # …
-      dlg.resolve(result)
-    }
-    
-    @bridge.off("callbackName")
-    
-    @bridge.once("uniqueCallback") { … }
-    
-With `Bridge.call` you can invoke such a callback from JavaScript on the Ruby side (or vice versa). Optionally the last parameter can be again a **callback** function that receives the result from Ruby that passed with `message.resolve`.
-
-    Bridge.call('callbackName', 42, 81);
-    
-    Bridge.call('callbackName', 42, 81, function(result) { alert(result); });
-
-Similarly, Ruby `bridge.call` calls a (public static) JavaScript function.
-
-    bridge.call("callbackName", 42, 81)
-    
-    bridge.call("callbackName", 42, 81) { |result| puts result }
-    
-If the focus is more about getting data, you may prefer the **promise** style.
-In JavaScript:
-
-    var promise = Bridge.get('callbackName', 42, 81);
-    promise.then(function(result) { alert(result); });
-    
-And in Ruby:
-
-    promise = bridge.get("prompt", "Give more input")
-    promise.then{ |input| puts(input * 5) }
-
-## Architecture
-
-The two main goals of the library are separated by two layers, one for the intuitive API and one for the workarounds for SketchUp-specific problems. Outward-facing is the API layer "Bridge" that cares about the nice features like multiple parameters, object serialization and Promises. The internal socket-like "Connection" cares about basic message passing between SketchUp's Ruby and JavaScript environments without loosing or corrupting data. 
-
-In fact, we can easily replace it by different implementations while maintaining the Bridge API. 
-
-## More Examples
-
-### Simple call
+### Usage Example
 
 On the Ruby side:
 
-    @bridge = Bridge.new(webdialog)
-    @bridge.on("add_image") { |deferred, image_path, point, width, height|
-      @entities.add_image(image_path, point, width.to_l, height.to_l)
-    }
+```ruby
+  Bridge.decorate(dialog)
+  dialog.on('compute_area') { |deferred, width, length|
+    if validate(width) && validate(length)
+      result = compute_area(width, length)
+      deferred.resolve(result)
+    else
+      deferred.reject('The input is not valid.')
+    end
+  }
+```
 
 On the JavaScript side:
 
-    Bridge.call('add_image', 'http://www.photos.com/image/9895.jpg', [10, 10, 0], '2.5m', '1.8m');
+```javascript
+  Bridge.get('compute_area', width, length)
+  .then(function (result) {
+    $('#areaOutput').text(result);
+  }, function (error) {
+    $('#inputWidth').addClass('invalid');
+    $('#inputLength').addClass('invalid');
+    alert(error);
+  });
+```
 
-The `Bridge.call` can also accept a primitive callback function as last parameter.
+## References <a id="references"></a>
 
-### Delayed callback:
-
-    @bridge.on("slow_callback") { |deferred|
-      UI.start_timer(5, false){
-        deferred.resolve "done!"
-      }
-    }
-
-<del>
-### Log output to the Ruby Console
-    
-    Bridge.puts('Swiss "grüezi" is pronounced [ˈɡryə̯tsiː] and means "您好！" in Chinese.');
-
-### Log an error to the Ruby Console
-
-    try {
-      document.makeMeAnError();
-    } catch (error) {
-      Bridge.error(error);
-    }
-
-</del>
-
-### Usage with promises
-
-Much nicer are promises, which allow chaining of operations that depend on the result of previous operations. Promises also provide code paths for successful method invocations (return value) and to report and handle failures.
-
-On the JavaScript side:
-
-    Bridge.get('writeImageAndEncodeBase64')
-    .then(uploadImageToWeb)
-    .then(function(shareURL){
-        alert('The image was shared successfully at '+shareURL);
-    }).catch(function(reason){
-        alert('Oh snap! Something went wrong: '+reason);
-    })
-
-On the Ruby side:
-
-    @bridge.on('writeImageAndEncodeBase64') { |deferred|
-      filepath = File.join(get_temporary_path(), 'image.jpg')
-      @model.active_view.write_image(filepath, 600, 400)
-      data = encodeBase64(filepath)
-      deferred.resolve(data)
-    }
-
-### More
-
-On the Ruby side:
-    
-    @bridge.on("do_calculation") { |deferred, length, width|
-      if validate(length) && validate(width)
-        result = calculate(length)
-        deferred.resolve(result)
-      else
-        deferred.reject("The input is not valid.")
-      end
-    }
-
-On the JavaScript side:
-    
-    var promise = Bridge.get('do_calculation', length, width)
-    promise.then(function(result){
-      $('#resultField').text(result);
-    }, function(failureReason){
-      $('#inputField1').addClass('invalid');
-      $('#inputField2').addClass('invalid');
-      alert(failureReason);
-    });
+- [Introductory forum topic for discussion]()
+- [Github project](https://github.com/Aerilius/sketchup-bridge/)
+- [Tutorial installable as SketchUp extension](https://extensions.sketchup.com/en/content/sketchup-bridge-tutorial)
+- [Minimal sample extension template](https://github.com/Aerilius/sketchup-bridge/tree/master/sample/)

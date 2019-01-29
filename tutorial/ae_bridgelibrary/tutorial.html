@@ -1,0 +1,698 @@
+<html>
+  <head>
+    <title>SketchUp Bridge Tutorial</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <script type="text/javascript" src="./bridge.js"></script>
+    <style>
+body {
+  /* Override the too serify default Times font. */
+  font-family: Calibri, Helvetica;
+}
+a {
+  color: #005596;
+  text-decoration: none;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+table {
+  width: 100%;
+  background: white;
+}
+table, td {
+  border: 1px lightGray solid;
+}
+tt {
+  font-size: 120%;
+}
+pre {
+  white-space: pre-wrap;
+}
+pre > code.lang-javascript {
+  display: block;
+  background: #e0efff;
+  padding: 1em;
+}
+pre > code.lang-javascript:before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'JavaScript';
+}
+pre > code.lang-ruby {
+  display: block;
+  background: #ffeeee;
+  padding: 1em;
+}
+pre > code.lang-ruby:before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'Ruby';
+}
+.example {
+  background: #fffadd;
+  padding: 1em;
+}
+.example:before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'Example';
+}
+hr {
+  border: 1px lightGray solid;
+}
+/* hljs */
+code, pre {
+  font-family: Consolas, Menlo, Monaco, "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", monospace;
+}
+pre > code {
+  color: #333;
+}
+.hljs {
+  color: #333;
+}
+.hljs-class .hljs-title, .haskell .hljs-type, .vhdl .hljs-literal, .tex .hljs-command {
+  color: #458;
+  font-weight: bold;
+}
+.hljs-comment, .hljs-doctag {
+  color: #998;
+  font-style: italic;
+}
+.hljs-built_in, .lisp .hljs-title, .clojure .hljs-built_in, .hljs-builtin-name {
+  color: #007ede;
+}
+.hljs-keyword, .javascript .hljs-title, .nginx .hljs-title, .hljs-subst, .hljs-request, .hljs-status {
+  color: #333;
+  font-weight: bold;
+}
+.hljs-number, .ruby .hljs-constant {
+  color: #099;
+}
+.hljs-string, .hljs-tag .hljs-string, .tex .hljs-formula {
+  color: #d14;
+}
+.hljs-title, .hljs-name, .coffeescript .hljs-params, .scss .hljs-meta {
+  color: #d14;
+  font-weight: bold;
+}
+/* collapsible-section */
+.collapsible-section.collapsed * {
+  display: none;
+}
+.collapsible-section > h1:first-child, 
+.collapsible-section > h2:first-child, 
+.collapsible-section > h3:first-child, 
+.collapsible-section > h4:first-child {
+  display: block!important;
+}
+.collapsible-section > h1:first-child:before, 
+.collapsible-section > h2:first-child:before, 
+.collapsible-section > h3:first-child:before, 
+.collapsible-section > h4:first-child:before {
+  display: inline-block;
+  content: "►";
+  transform: rotate(90deg);
+  transition: transform 0.5s;
+}
+.collapsible-section.collapsed > h1:first-child:before, 
+.collapsible-section.collapsed > h2:first-child:before, 
+.collapsible-section.collapsed > h3:first-child:before, 
+.collapsible-section.collapsed > h4:first-child:before {
+  transform: rotate(0deg);
+}
+.collapsible-section > h1:first-child:hover, 
+.collapsible-section > h2:first-child:hover, 
+.collapsible-section > h3:first-child:hover, 
+.collapsible-section > h4:first-child:hover {
+  cursor: pointer;
+}
+    </style>
+    <script>
+function toggle (element) {
+  if (element.style.display == 'none') {
+    show(element);
+  } else {
+    hide(element);
+  };
+}
+function hide (element) {
+  element.style.display = 'none';
+}
+function show (element) {
+  element.style.display = 'block';
+}
+function toggleClass (element, className) {
+  var classNames = element.className.split(/\s+/);
+  var index = classNames.indexOf(className);
+  if (index < 0) {
+    classNames.push(className);
+    element.className = classNames.join(' ');
+  } else {
+    classNames.splice(index, 1);
+    element.className = classNames.join(' ');
+  }
+}
+    </script>
+    <script>
+function isSketchUp () {
+  return navigator.userAgent.search('SketchUp') !== -1;
+}
+// This is a mock for running the tutorial in a browser.
+if (!isSketchUp()) {
+  var Bridge = {
+    get: function (callbackName, arg1, arg2) {
+      return new Promise(function (resolve, reject) {
+        switch (callbackName) {
+          case 'settings':
+            resolve({ 'width': 12.5, 'length': 15.0 });
+            break;
+          case 'compute_result1':
+            try {
+              if (arg2 == 0) {
+                throw Error('ZeroDivisionError: divided by 0');
+              }
+              resolve(arg1 / arg2);
+            } catch (e) {
+              reject(e);
+            }
+            break;
+          case 'compute_result2':
+            try {
+              if (arg1 < 0) {
+                throw Error('Math::DomainError: Numerical argument is out of domain - "sqrt"');
+              }
+              resolve(Math.sqrt(arg1));
+            } catch (e) {
+              reject(e);
+            }
+            break;
+          case 'compute_asynchronously':
+            window.setTimeout(function () {
+              resolve(42);
+            }, 3000);
+            break;
+        }
+      });
+    },
+    call: function (callbackName) {
+      switch (callbackName) {
+        case 'select_pushpull':
+          console.log('(selected Pushpull tool)');
+          break;
+         case 'ruby_to_javascript1':
+           entitySelected('ComponentInstance#1', {'lenx': 71.0, 'leny': 32.5, 'lenz': 39.5});
+           break;
+         case 'ruby_to_javascript2':
+           syncToServer('ComponentInstance#1', {'lenx': 71.0, 'leny': 32.5, 'lenz': 39.5}).then(function (response) {
+              alert(response['responseText']);
+            }, function (response) {
+              alert(response['statusText']);
+           });
+           break;
+      }
+    }
+  };
+}
+    </script>
+  </head>
+  <body>
+    <section>
+      <h1>Tutorial for SketchUp Bridge</h1>
+      <p>Bridge is a bidirectional communication system between JavaScript and the Ruby environment.</p>
+    </section>
+    <section class="collapsible-section collapsed" id="section_explanation">
+      <h2 onclick="toggleClass(document.all.section_explanation, 'collapsed')">Detailed Explanation</h2>
+      <section>
+        <h3>Background</h3>
+        SketchUp Bridge aims to encourage good programming practices:</p>
+        <ul>
+          <li>Abstract repeated patterns into <b>functions</b> (e.g. not directly calling <tt>window.location = 'skp:callbackname'</tt>) helps maintaining code and allows to replace the implementation (like this library) at any time with little effort. (<a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself" target="blank">DRY</a>)</li>
+          <li>Using proven <b>libraries</b> for handling <b>low-level operations</b> (like string concatenation, serialization of arguments and escaping). The less code you write on your own, the less errors you make (well, there could be errors in the libraries). Write as little code as necessary.</li>
+          <li>Keeping <b>related code together</b>. Your code becomes more readable if an action (request to Ruby) and follow-up action (receiving result from Ruby) are not in different places or functions.</li>
+          <li>Supporting <b>asynchronicity</b> of HtmlDialog (and WebDialog on macOS). Invoking a callback from JavaScript (<tt>sketchup.callbackname()</tt> or <tt>window.location = 'skp:callbackname'</tt>) runs already the next line of JavaScript before the Ruby callback is completed.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Promises</h3>
+        <p>Bridge is based on <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise" target="blank">promises</a>. Promises help us to write clean asynchronous code as easily as synchronous code and keep subsequent operations together. Promises are proxies for values that are initially unknown. You provide a callback that is called once that the value is known, and optionally a callback for when retrieving the value failed. A promise supports two methods:
+        </p>
+        <ul>
+          <li><tt>then(successCallback)</tt> &emsp; This callback function is called when the promise succeeds. It receives the result object as parameter.</li>
+          <li><tt>catch(errorCallback)</tt> &emsp; The callback function is called when the previous promise fails. It receives the error object as parameter.</li>
+          <li><tt>then(successCallback, errorCallback)</tt> &emsp; You can also provide both callbacks in a single function call.</li>
+        </ul>
+        <p>All of these methods themselves return a promise, so you can chain methods as if the code in the callbacks was sequential:
+  <pre><code>promise.then(callback1).then(callback2).then(callback3)</code></pre>
+          or even:
+  <pre><code class="lang-javascript hljs"><span class="hljs-keyword">let</span> result0 = <span class="hljs-keyword">await</span> promise
+<span class="hljs-keyword">let</span> result1 = <span class="hljs-keyword">await</span> callback1(result0)
+<span class="hljs-keyword">let</span> result2 = <span class="hljs-keyword">await</span> callback2(result1)
+<span class="hljs-keyword">let</span> result3 = <span class="hljs-keyword">await</span> callback3(result2)</code></pre>
+          Without promises all these callbacks would be spread in different places and the sequential structure would not be obvious, which makes the code hard to understand and hard to maintain.</p>
+        <p>(For a deeper introduction to the advantages of promises, see <a href="https://www.stephanboyer.com/post/107/fun-with-promises-in-javascript" target="blank">this blog post</a>.</p>
+      </section>
+      <section>
+        <h3>References</h3>
+        <ul>
+          <li><a href="">Introductory forum topic for discussion</a></li>
+          <li><a href="https://github.com/Aerilius/sketchup-bridge/">Github project</a></li>
+          <li><a href="https://github.com/Aerilius/sketchup-bridge/tree/master/sample/">Minimal sample extension template</a></li>
+        </ul>
+      </section>
+    </section>
+    <section>
+      <h2>Overview</h2>
+      <ul style="list-style-type: none">
+        <li>JavaScript:
+          <ul>
+            <li>
+              <a href="#javascript-bridge-get"><b><tt>Bridge.get(callbackname, ...args) → Promise</tt></b></a></br>
+              Invokes a Ruby callback and returns a promise that will be resolved with the callback's return value.
+            </li>
+            <li>
+              <a href="#javascript-bridge-call"><b><tt>Bridge.call(callbackname, ...args) → void</tt></b></a><br/>
+              Invokes a Ruby callback with multiple arguments.
+            </li>
+            <li style="color: gray;">
+              <tt>Bridge.puts(stringOrObject) → void</tt><br/>
+              Shorthand to print a string/object to the Ruby console.
+            </li>
+            <li style="color: gray;">
+              <tt>Bridge.error(errorObject) → void</tt><br/>
+              Shorthand to print an error to the Ruby console.
+            </li>
+          </ul>
+        </li>
+        <li>Ruby:
+          <ul>
+            <li style="color: gray;">
+              <a href="#ruby-bridge-new"><tt>Bridge.new(dialog) → Bridge</tt></a><br/>
+              Alternatively adds the Bridge methods to a <tt>UI::WebDialog</tt> or <tt>UI::HtmlDialog</tt>.
+            </li>
+            <li style="color: gray;">
+              <a href="#ruby-bridge-decorate"><tt>Bridge.decorate(dialog)</tt></a><br/>
+              Alternatively adds the Bridge methods to a <tt>UI::WebDialog</tt> or <tt>UI::HtmlDialog</tt>.
+            </li>
+            <li style="color: gray;">
+              <a href="#ruby-bridge-on"><tt>Bridge#on(callbackname, &callback) → Bridge</tt></a><br/>
+              Registers a callback on the Bridge.
+            </li>
+            <li>
+              <a href="#ruby-bridge-call"><b><tt>Bridge#call(callbackname, ...args) → nil</tt></b></a><br/>
+              Invokes a JavaScript function with multiple arguments.
+            </li>
+            <li>
+              <a href="#ruby-bridge-get"><b><tt>Bridge#get(callbackname, ...args) → Promise</tt></b></a><br/>
+              Invokes a JavaScript function and returns a promise that will be resolved with the JavaScript function's return value.
+            </li>
+          </ul>
+        </li>
+    </section>
+    <section>
+      <h2>1 Initializing Bridge<a id="ruby-bridge-new"></a><a id="ruby-bridge-on"></a></h2>
+      <section>
+        <p>
+          First you instatiate the Bridge class with a dialog to which the bridge should be connected. Then you can attach callbacks to the Bridge instance using the shorter <tt>on</tt> method, analog to <tt>add_action_callback</tt>. In contrast to <tt>add_action_callback</tt>, the registered code block receives as first parameter a proxy to the dialog (analog) that has been extended (new) to serve as a "deferred" object that is able to resolve or reject the promise of the requested result.
+        </p>
+<pre><code class="lang-ruby hljs">dialog = UI::HtmlDialog.new()
+bridge = Bridge.new(dialog)
+bridge.on(<span class="hljs-string">'callback_name'</span>) { <span class="hljs-params">|deferred|</span>
+  <span class="hljs-comment"># Callback code</span>
+}</code></pre>
+        <p><a id="ruby-bridge-decorate"></a>
+          For convenience, you can also extend the dialog instance with the Bridge methods.
+        </p>
+<pre><code class="lang-ruby hljs">dialog = UI::HtmlDialog.new()
+Bridge.decorate(dialog)
+dialog.on(<span class="hljs-string">'callback_name'</span>) { <span class="hljs-params">|deferred|</span>
+  <span class="hljs-comment"># Callback code</span>
+}</code></pre>
+      </section>
+    </section>
+    <section>
+      <h2>2 JavaScript to Ruby</h2>
+      <section>
+        <h3>2.1 Bidirectional communication &emsp; <tt>Bridge.get(callbackname, ...args) → Promise</tt><a id="javascript-bridge-get"></a></h3>
+        <p>Send a request from the dialog to Ruby and receive the response.</p>
+        <section>
+          <h4>Initializing the dialog</h4>
+          <p>Showing and loading the dialog is asynchronous. That means when the Ruby method <code>dialog.show</code> finishes, the dialog is not fully loaded, so you cannot immediately call <code>dialog.execute_script</code>. Instead of making your Ruby code push data to the dialog (not knowing whether the dialog is able to respond), make your dialog fetch data whenever it needs. That means the Ruby part acts like a server, and the dialog is the client.</p>
+          <p>While the browser reads the HTML file, your initialization JavaScript can only access elements above the <tt>&lt;script&gt;</tt> element (because only these have been loaded). If you choose to add your script in the <tt>&lt;head&gt;</tt> section or an external file, use the following pattern to initialize your dialog:</p>
+<pre><code class="lang-ruby hljs">dialog.on(<span class="hljs-string">'settings'</span>) { <span class="hljs-params">|deferred|</span>
+  deferred.resolve(@settings)
+}</code></pre>
+<pre><code class="lang-javascript hljs"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initialize</span> (<span class="hljs-params"></span>) </span>{
+  Bridge.get(<span class="hljs-string">'settings'</span>).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">settings</span>) </span>{
+    <span class="hljs-comment">// Do something with the settings, initialize your app etc.</span>
+  }
+}
+
+<span class="hljs-comment">// Register a handler for the event when the document has been loaded.</span>
+<span class="hljs-comment">// If you use jQuery, you can use $(function () { }) instead.</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-built_in">document</span>.readyState === <span class="hljs-string">'loading'</span>) {
+  <span class="hljs-built_in">document</span>.addEventListener(<span class="hljs-string">'DOMContentLoaded'</span>, initialize);
+} <span class="hljs-keyword">else</span> {
+  initialize();
+}</code></pre>
+          <div class="example">
+            <div>
+              <button id="button1_get_settings">Get settings</button>
+            </div>
+            <textarea id="textarea1_settings_result"></textarea>
+            <script>
+            var button1 = document.getElementById('button1_get_settings');
+            var textarea1 = document.getElementById('textarea1_settings_result');
+            button1.addEventListener('click', function (event) {
+              textarea1.value = '';
+              Bridge.get('settings').then(function (settings) {
+                // The settings are an object, just like in Ruby, so we can use them in our app.
+                // Only for the purpose of showing them in a textarea, we serialize them as a JSON string.
+                textarea1.value = JSON.stringify(settings);
+              });
+            });
+            </script>
+          </div>
+        </section>
+        <section>
+          <h4>Handling errors in callbacks</h4>
+          <p>When an error happens, you may want to know about it. You can handle errors in Ruby or in JavaScript.</p>
+<pre><code class="lang-ruby hljs">dialog.on(<span class="hljs-string">'compute_result1'</span>) { <span class="hljs-params">|deferred, arg1, arg2|</span>
+  <span class="hljs-comment"># SketchUp's native dialog callbacks do not raise errors.</span>
+  <span class="hljs-comment"># When an error is raised, Bridge rejects the deferred promise automatically.</span>
+  <span class="hljs-comment"># Then your dialog's JavaScript code can handle the error.</span>
+  result = compute_result1(arg1, arg2)
+  deferred.resolve(result)
+}</code></pre>
+<pre><code class="lang-javascript hljs">Bridge.get(<span class="hljs-string">'compute_result1'</span>, argument1, argument2).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">result</span>) </span>{
+  <span class="hljs-comment">// Do something with the result</span>
+}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error</span>) </span>{
+  <span class="hljs-comment">// Do any kind of error handling, choose an alternative code path,</span>
+  <span class="hljs-comment">// or display a friendly message to the user.</span>
+});</code></pre>
+          <div class="example">
+            <div>
+              <input type="number" id="input21_compute_result1" value="4"/>
+              <input type="number" id="input22_compute_result1" value="0"/>
+              <button id="button2_compute_result1">Compute division</button>
+            </div>
+            <div>
+              <label>Result:</label>
+            </div>
+            <textarea id="textarea2_compute_result1_result"></textarea>
+            <div>
+              <label>Error:</label>
+            </div>
+            <textarea id="textarea2_compute_result1_error"></textarea>
+            <script>
+            var input21 = document.getElementById('input21_compute_result1');
+            var input22 = document.getElementById('input22_compute_result1');
+            var button2 = document.getElementById('button2_compute_result1');
+            var textarea2Result = document.getElementById('textarea2_compute_result1_result');
+            var textarea2Error = document.getElementById('textarea2_compute_result1_error');
+            button2.addEventListener('click', function (event) {
+              var dividend = parseInt(input21.value);
+              var divisor = parseInt(input22.value);
+              textarea2Result.value = '';
+              textarea2Error.value = '';
+              Bridge.get('compute_result1', dividend, divisor).then(function (result) {
+                textarea2Result.value = JSON.stringify(result);
+              }, function (error) {
+                textarea2Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+              });
+            });
+            </script>
+          </div>
+<pre><code class="lang-ruby hljs">dialog.on(<span class="hljs-string">'compute_result2'</span>) { <span class="hljs-params">|deferred, arg1|</span>
+  <span class="hljs-comment"># If you want to handle the error in Ruby, you should include `begin/rescue`</span>
+  <span class="hljs-comment"># in the callback. You can also forward custom data to the error handling JavaScript.</span>
+  <span class="hljs-keyword">begin</span>
+    result = compute_result2(arg1)
+    deferred.resolve(result)
+  <span class="hljs-keyword">rescue</span> Math::DomainError =&gt; error
+    $stderr.write(error.message)
+    $stderr.write(error.backtrace.join($\))
+    <span class="hljs-comment"># Do any kind of error handling: </span>
+    <span class="hljs-comment"># provide an alternative result (e.g. 0) that allows continuing the computation,</span>
+    <span class="hljs-comment"># or return a friendly human-readable error message,</span>
+    <span class="hljs-comment"># or provide a link/form to report the error to the developer.</span>
+    deferred.reject(<span class="hljs-string">'Oh! Too bad, the square root of zero exists only in imagination. Please choose a different number.'</span>)
+  <span class="hljs-keyword">end</span>
+}</code></pre>
+<pre><code class="lang-javascript hljs">Bridge.get(<span class="hljs-string">'compute_result2'</span>, number).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">result</span>) </span>{
+  <span class="hljs-comment">// Do something with the result</span>
+}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">error</span>) </span>{
+  <span class="hljs-comment">// Do any kind of error handling, choose an alternative code path,</span>
+  <span class="hljs-comment">// or display a friendly message to the user.</span>
+});</code></pre>
+          <div class="example">
+            <div>
+              <input type="number" id="input3_compute_result2" value="-0.25"/>
+              <button id="button3_compute_result2">Compute square root</button>
+            </div>
+            <div>
+              <label>Result:</label>
+            </div>
+            <textarea id="textarea3_compute_result2_result"></textarea>
+            <div>
+              <label>Error:</label>
+            </div>
+            <textarea id="textarea3_compute_result2_error"></textarea>
+            <script>
+              var input3 = document.getElementById('input3_compute_result2');
+              var button3 = document.getElementById('button3_compute_result2');
+              var textarea3Result = document.getElementById('textarea3_compute_result2_result');
+              var textarea3Error = document.getElementById('textarea3_compute_result2_error');
+              button3.addEventListener('click', function (event) {
+                var number = parseFloat(input3.value);
+                textarea3Result.value = '';
+                textarea3Error.value = '';
+                Bridge.get('compute_result2', number).then(function (result) {
+                  textarea3Result.value = JSON.stringify(result);
+                }, function (error) {
+                textarea3Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+                });
+              });
+            </script>
+          </div>
+        </section>
+        <section>
+          <h4>Long-during computations</h4>
+          <p>A promise does not need to return the result immediately. This allows you to continue your JavaScript code later, no matter how long it takes. For example your Ruby code may have called an external program, or downloaded a big file from the internet, or called a custom Select tool that resolves the promise only once that the user has picked an entity.</p>
+<pre><code class="lang-javascript hljs">Bridge.get(<span class="hljs-string">'compute_asynchronously'</span>).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">result</span>) </span>{
+  <span class="hljs-comment">// That may take long, but the callback is only called when the computation finished.</span>
+});
+</code></pre>
+          <div class="example">
+            <div>
+              <button id="button4_compute_asynchronously">Compute</button>
+            </div>
+            <div>
+              <label>Result:</label>
+            </div>
+            <textarea id="textarea4_compute_asynchronously"></textarea>
+            <script>
+              var button4 = document.getElementById('button4_compute_asynchronously');
+              var textarea4 = document.getElementById('textarea4_compute_asynchronously');
+              button4.addEventListener('click', function (event) {
+                textarea4.value = 'Computing...';
+                Bridge.get('compute_asynchronously').then(function (result) {
+                  textarea4.value = JSON.stringify(result);
+                });
+              });
+            </script>
+          </div>
+        </section>
+      </section>
+      <section>
+        <h3>2.2 One way communication &emsp; <tt>Bridge.call(callbackname, ...args) → void</tt><a id="javascript-bridge-call"></a></h3>
+        <p>Sometimes you want to trigger some action, but don't receive a result. The method <tt>Bridge.call</tt> works the same way, but does not return a promise.</p>
+<pre><code class="javascript">Bridge.call('select_pushpull');</code></pre>
+        <div class="example">
+          <button id="button5" onclick="Bridge.call('select_pushpull')">Action</button>
+        </div>
+      </section>
+      <section>
+        <h3>2.3 Using modern JavaScript</h3>
+        <p>If you are tired of writing <tt>function</tt> and don't need to support WebDialogs, you can use modern JavaScript features like:</p>
+        <ul>
+          <li><b>Arrow functions</b>: A short function can be replaced by <tt>(arg) => expression</tt>. (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions" target="blank">Reference</a>). You can then write: <br/><pre><code>Bridge.get('settings').then(settings => alert(settings))</code></pre></li>
+          <li><b><tt>async</tt> and <tt>await</tt></b>: These new keywords allow to write code with promises sequentially. (<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function" target="blank">Reference</a>)</li>
+        </ul>
+<pre><code class="lang-javascript hljs"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">myAsyncFunction</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-comment">// As you know, Bridge.get returns a promise, not the result.</span>
+  <span class="hljs-keyword">let</span> result1 = <span class="hljs-keyword">await</span> Bridge.get(<span class="hljs-string">'compute_result1'</span>, <span class="hljs-number">4</span>, <span class="hljs-number">2</span>)
+  <span class="hljs-comment">// The await keyword "converts" all subsequent code into a thenable that is </span>
+  <span class="hljs-comment">// only run when the promise is resolved. This is non-blocking!</span>
+  <span class="hljs-comment">// Do something with result1. This can again be asynchronous!</span>
+  <span class="hljs-keyword">let</span> result2 = <span class="hljs-keyword">await</span> Bridge.get(<span class="hljs-string">'compute_result2'</span>, result1)
+  <span class="hljs-comment">// Do something with result2. You can insert it into the output field,</span>
+  <span class="hljs-comment">// or return it. The async keywords "converts" the return value into a promise.</span>
+  <span class="hljs-keyword">return</span> result2
+}</code></pre>
+        <div class="example">
+          <small>(Note: This does not work in WebDialog/Internet Explorer.)</small>
+          <div>
+            <label>a = <input type="number" id="input61" value="4"/></label>
+            <label>b = <input type="number" id="input62" value="2"/></label>
+            <button id="button6">Compute sqrt(a / b)</button>
+          </div>
+          <div>
+            <label>Result:</label>
+          </div>
+          <textarea id="textarea6_result"></textarea>
+          <div>
+            <label>Error:</label>
+          </div>
+          <textarea id="textarea6_error"></textarea>
+          <script>
+          async function myAsyncFunction (a, b) {
+            var result1, result2;
+            // As you know, Bridge.get returns a promise, not the result.
+            result1 = await Bridge.get('compute_result1', a, b);
+            // The await keyword "converts" all subsequent code into a thenable that is 
+            // only run when the promise is resolved. This is non-blocking!
+            // Do something with result1. This can again be asynchronous!
+            result2 = await Bridge.get('compute_result2', result1);
+            // Do something with result2. You can insert it into the output field,
+            // or return it. The async keywords "converts" the return value into a promise.
+            return result2;
+          };
+          var input61 = document.getElementById('input61');
+          var input62 = document.getElementById('input62');
+          var button6 = document.getElementById('button6');
+          var textarea6Result = document.getElementById('textarea6_result');
+          var textarea6Error = document.getElementById('textarea6_error');
+          button6.addEventListener('click', function (event) {
+            var a = parseInt(input61.value);
+            var b = parseInt(input62.value);
+            textarea6Result.value = '';
+            textarea6Error.value = '';
+            myAsyncFunction(a, b).then(function (result) {
+              textarea6Result.value = JSON.stringify(result);
+            }, function (error) {
+              textarea6Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+            });
+          });
+          </script>
+        </div>
+      </section>
+    </section>
+    <section>
+      <h2>3 Ruby to JavaScript</h2>
+      <p>In some cases, you want to push updates from Ruby to the dialog (when the dialog is loaded), for example when an observer was triggered because an entity was changed or the user selected a different entity. The same functions <tt>call</tt> and <tt>get</tt> work also on the bridge/dialog instance in Ruby. Using the <tt>Bridge.call</tt> method instead of <tt>execute_script</tt> ensures all arguments are properly encoded.</p>
+      <section>
+        <h3>3.1 Invoking JavaScript functions &emsp; <tt>dialog.call(javascript_function_name, ...arguments) → nil</tt><a id="ruby-bridge-call"></a></h3>
+<pre><code class="lang-ruby hljs">entity_name = <span class="hljs-string">'ComponentInstance#1'</span>
+attributes = {<span class="hljs-string">'lenx'</span>: <span class="hljs-number">71.0</span>, <span class="hljs-string">'leny'</span>: <span class="hljs-number">32.5</span>, <span class="hljs-string">'lenz'</span>: <span class="hljs-number">39.5</span>}
+dialog.call(<span class="hljs-string">'entitySelected'</span>, entity_name, attributes)
+</code></pre>
+<pre><code class="lang-javascript hljs"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">entitySelected</span> (<span class="hljs-params">entityName, attributes</span>) </span>{
+  <span class="hljs-comment">// Do something with the parameters, like updating the user interface.</span>
+  <span class="hljs-comment">// Alternatively to using parameters, you could fetch data from Ruby with Bridge.get.</span>
+}</code></pre>
+        <div class="example">
+          <div>
+            <button id="button7">Ruby observer triggered</button>
+          </div>
+          <div>
+            <label>Currently selected entity:</label>
+          </div>
+          <textarea id="textarea7_entity"></textarea>
+          <div>
+            <label>Which has these dynamic attributes:</label>
+          </div>
+          <table id="table7_attributes">
+            <tr><td>&emsp;</td><td>&emsp;</td></tr>
+          </table>
+          <script>
+          var button7 = document.getElementById('button7');
+          var textarea7Entity = document.getElementById('textarea7_entity');
+          var table7Attributes = document.getElementById('table7_attributes');
+          function entitySelected (entityName, attributes) {
+            textarea7Entity.value = entityName;
+            while (table7Attributes.firstChild) {
+              table7Attributes.removeChild(table7Attributes.firstChild);
+            }
+            for (var attribute in attributes) {
+              if (attributes.hasOwnProperty(attribute)) {
+                var value = attributes[attribute];
+                var tr = document.createElement('tr');
+                var tdAttribute = document.createElement('td');
+                tdAttribute.appendChild(document.createTextNode(attribute));
+                var tdValue = document.createElement('td');
+                tdValue.appendChild(document.createTextNode(value));
+                tr.appendChild(tdAttribute);
+                tr.appendChild(tdValue);
+                table7Attributes.appendChild(tr);
+              }
+            }
+          }
+          button7.addEventListener('click', function (event) {
+            Bridge.call('ruby_to_javascript1');
+          });
+          </script>
+        </div>
+      </section>
+      <section>
+        <h3>3.2 Getting return values from JavaScript functions &emsp; <tt>dialog.get(javascript_function_name, ...arguments) → Bridge::Promise</tt><a id="ruby-bridge-get"></a></h3>
+<pre><code class="lang-ruby hljs">changed_entity = <span class="hljs-string">'ComponentInstance#1'</span>
+attributes = {<span class="hljs-string">'lenx'</span>: <span class="hljs-number">71.0</span>, <span class="hljs-string">'leny'</span>: <span class="hljs-number">32.5</span>, <span class="hljs-string">'lenz'</span>: <span class="hljs-number">39.5</span>}
+dialog.get(<span class="hljs-string">'syncToServer'</span>, changed_entity, attributes).<span class="hljs-keyword">then</span>{ <span class="hljs-params">|server_response|</span>
+  puts(server_response[<span class="hljs-string">'body'</span>])
+  <span class="hljs-comment"># Do something with the result or continue in the plugin.</span>
+}.catch{
+  puts(server_response[<span class="hljs-string">'statusText'</span>])
+  <span class="hljs-comment"># Handle the error.</span>
+}</code></pre>
+<pre><code class="lang-javascript hljs"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">syncToServer</span> (<span class="hljs-params">entityName, attributes</span>) </span>{
+  <span class="hljs-comment">// Do something with the parameters, like sending a request to a remote server.</span>
+  <span class="hljs-comment">// Return the result or a promise that will resolve later to the result.</span>
+  <span class="hljs-comment">// Example using jQuery:</span>
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">resolve, reject</span>) </span>{
+    $.ajax({
+      <span class="hljs-attr">url</span>: <span class="hljs-string">'www.example.com/app/synchronize-model'</span>,
+      <span class="hljs-attr">method</span>: <span class="hljs-string">'POST'</span>,
+      <span class="hljs-attr">data</span>: {<span class="hljs-attr">action</span>: <span class="hljs-string">'update'</span>, <span class="hljs-string">'entity'</span>: entityName, <span class="hljs-string">'attributes'</span>: attributes}
+    }).done(resolve).fail(reject);
+  });
+}</code></pre>
+        <div class="example">
+          <div>
+            <button id="button8">Entity changed</button>
+          </div>
+          <script>
+          var button8 = document.getElementById('button8');
+          var textarea8Result = document.getElementById('textarea8_result');
+          function syncToServer (entityName, attributes) {
+            return new Promise(function (resolve, reject) {
+              window.setTimeout(function () {
+                if (Math.random() > 0.5) {
+                  resolve({
+                    status: 200,
+                    statusText: 'OK',
+                    responseText: 'Model was successfully synced with the server.'
+                  });
+                } else {
+                  reject({
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    responseText: 'The server is currently unavailable.'
+                  });
+                }
+              }, 1000);
+            });
+          }
+          button8.addEventListener('click', function (event) {
+            Bridge.call('ruby_to_javascript2');
+          });
+          </script>
+        </div>
+      </section>
+    </section>
+  </body>
+</html>

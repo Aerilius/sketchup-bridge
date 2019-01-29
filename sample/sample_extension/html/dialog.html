@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <title>SampleExtension</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <script type="text/javascript" src="../js/bridge.js"></script>
+  </head>
+  <body>
+    <p>Compute an area:</p>
+    <label>width: <input type="number" id="inputWidth"></label><br/>
+    <label>length: <input type="number" id="inputLength"></label><br/>
+    <button id="buttonComputeArea">Compute</button><br/>
+    <label>area: <input type="number" id="outputArea"></label>
+    <script type="text/javascript">
+// Since this script is at the end of the document, we can for simplicity omit
+// listening for the DOMContentLoaded event.
+var inputWidth = document.getElementById('inputWidth');
+var inputLength = document.getElementById('inputLength');
+var buttonComputeArea = document.getElementById('buttonComputeArea');
+var outputArea = document.getElementById('outputArea');
+
+Bridge.get('settings').then(function (settings) {
+  inputWidth.value = settings.width;
+  inputLength.value = settings.length;
+});
+
+buttonComputeArea.addEventListener('click', function (event) {
+  Bridge.get('compute_area', parseFloat(inputWidth.value), parseFloat(inputLength.value))
+  .then(function (area) {
+    outputArea.value = area;
+  });
+});
+    </script>
+  </body>
+</html>

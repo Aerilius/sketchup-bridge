@@ -1,6 +1,6 @@
-module AuthorName
+module AE
 
-  module ExtensionName
+  module BridgeLibrary
 
     # Optionally requires 'json.rb'
     # Requires modules Sketchup, UI

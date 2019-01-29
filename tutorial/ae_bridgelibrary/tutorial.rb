@@ -9,7 +9,8 @@ module AE
       PATH = File.dirname(__FILE__) unless defined?(self::PATH)
 
       @settings = {
-        :size => 12.5
+        :width => 12.5,
+        :length => 15.0
       }
 
       def self.run
@@ -21,7 +22,7 @@ module AE
           :left            => 200,
           :top             => 100,
         }
-        if false #defined?(UI::HtmlDialog)
+        if defined?(UI::HtmlDialog)
           dialog = UI::HtmlDialog.new(properties)
         else
           dialog = UI::WebDialog.new(properties)
@@ -44,7 +45,7 @@ module AE
         # Dialog calls a method to compute a result in Ruby.
         dialog.on('compute_result1') { |deferred, arg1, arg2|
           # SketchUp's native dialog callbacks do not raise errors.
-          # When an error is raised, Bridge rejects the deferred automatically.
+          # When an error is raised, Bridge rejects the deferred promise automatically.
           # Then your dialog's JavaScript code can handle the error.
           result = compute_result1(arg1, arg2)
           deferred.resolve(result)
@@ -140,7 +141,11 @@ module AE
 
       unless file_loaded?(__FILE__)
         UI.menu('extensions').add_item('SketchUp Bridge Tutorial'){
-          Tutorial.run
+          begin
+            Tutorial.run
+          rescue => error
+            $stderr << error
+          end
         }
         file_loaded(__FILE__)
       end
