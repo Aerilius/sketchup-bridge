@@ -59,7 +59,7 @@ WebDialogs had several problems that are deeply covered in the [Lost Manual](htt
 
 …Or why you _should_ use a library like [this](http://github.com/aerilius/sketchup-bridge) or [SKUI](https://github.com/thomthom/SKUI) or any other that provides a comparable solution: By using the `skp:` protocol you risk to jump through the same problems that many developers before you have struggled with. The official getting started examples guide new developers using `window.location = "skp:" + "some_callback@" + …` all over in the code base instead of abstracting it in a function. Once your project grows bigger, this becomes not only hard to read, but also hard to maintain (edit in many places) and error-prone (string splitting/parsing). As soon as you need to convert parameters or pass many parameters, you are about to re-discover problems for which you have already found a complete and reusable solution here.
 
-### Why does `UI::HtmlDialog` (SketchUp 2017+) not solve the problems?
+### Why does `UI::HtmlDialog` (SketchUp 2017+) not solve all the problems?
 
 It solves most problems but it still has some drawbacks. Firstly, callbacks are now completely asynchronous, but the HtmlDialog API has not been designed for asynchronicity (for example in `sketchup.callbackname({onCompleted: function})` the `onCompleted` JavaScript callback is called without the Ruby return values). This makes it hard to pass data from a Ruby callback back into the same JavaScript function. Secondly, `dialog.get_element_value` has been removed without replacement. Thirdly, `execute_script` still causes pitfalls to many developers due to encoding problems. Moreover many users use SketchUp versions &lt; 2017 and do not benefit from the improvements.
 
@@ -72,20 +72,20 @@ It solves most problems but it still has some drawbacks. Firstly, callbacks are 
 
 ### Features
 
-**1. Any amount of parameters** (compared to WebDialog): You can just pass parameters to the Bridge and rest assured to receive them on the JavaScript or Ruby side without worrying about turning them to string or splitting the string again.
+1. **Any amount of parameters** (compared to WebDialog): You can just pass parameters to the Bridge and rest assured to receive them on the JavaScript or Ruby side without worrying about turning them to string or splitting the string again.
 
-**2. Preserves type of parameters** (compared to WebDialog): Any basic, JSON-compatible types are mapped between Ruby and JavaScript.  
-     Ruby Hashes `{:key => "value"}` become JavaScript Object literals `{"key": "value"}`  
-     Ruby Arrays `[1, 2, 3, "string", true]` become JavaScript arrays `[1, 2, 3, "string", true]`  
-     Ruby `nil` becomes `null`…
+2. **Preserves type of parameters** (compared to WebDialog): Any basic, JSON-compatible types are mapped between Ruby and JavaScript.  
+    Ruby Hashes `{:key => "value"}` become JavaScript Object literals `{"key": "value"}`  
+    Ruby Arrays `[1, 2, 3, "string", true]` become JavaScript arrays `[1, 2, 3, "string", true]`  
+    Ruby `nil` becomes `null`…
 
-**3. Provides bidirectional callbacks**: Once your JavaScript code has invoked a callback on the Ruby side, it can again invoke a callback on the JavaScript side. Similarly from the Ruby side, you can request the result of a JavaScript function and get the result returned into a Ruby callback.
+3. **Provides bidirectional callbacks**: Once your JavaScript code has invoked a callback on the Ruby side, it can again invoke a callback on the JavaScript side. Similarly from the Ruby side, you can request the result of a JavaScript function and get the result returned into a Ruby callback.
 
-**4. Asynchronous callbacks**: Bridge is built with asynchronicity in mind. If you do external processing or call a web service or do any other delayed operation like having the user interact with a Tool, you may nevertheless want to return the result when it is available.
+4. **Asynchronous callbacks**: Bridge is built with asynchronicity in mind. If you do external processing or call a web service or do any other delayed operation like having the user interact with a Tool, you may nevertheless want to return the result when it is available.
 
-**5. Complete error and exception handling**: Whereever an exception occurs, it will not anymore go unnoticed and just do nothing. You can properly handle success and failures, like giving users feedback about invalid input. Or you can redirect all errors from both JavaScript and Ruby to the Ruby Console.
+5. **Complete error and exception handling**: Whereever an exception occurs, it will not anymore go unnoticed and just do nothing. You can properly handle success and failures, like giving users feedback about invalid input. Or you can redirect all errors from both JavaScript and Ruby to the Ruby Console.
 
-**6. Backwards compatibility**: Using the same code base, you can support both `UI::WebDialog` and `UI::HtmlDialog`.
+6. **Backwards compatibility**: Using the same code base, you can support both `UI::WebDialog` and `UI::HtmlDialog`.
 
 ## Usage <a id="usage"></a>
 
