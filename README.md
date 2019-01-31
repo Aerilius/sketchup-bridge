@@ -129,7 +129,7 @@ On the JavaScript side:
 
 ## References <a id="references"></a>
 
-- [Introductory forum topic for discussion]()
+- [Introductory forum topic for discussion](https://forums.sketchup.com/t/webdialog-htmldialog-tutorial-using-sketchup-bridge/86713)
 - [Github project](https://github.com/Aerilius/sketchup-bridge/)
 - [Tutorial installable as SketchUp extension](https://extensions.sketchup.com/en/content/sketchup-bridge-tutorial)
 - [Minimal sample extension template](https://github.com/Aerilius/sketchup-bridge/tree/master/sample/)
