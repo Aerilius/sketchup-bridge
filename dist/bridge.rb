@@ -9,7 +9,7 @@ module AuthorName
       # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
       # and dialogs. It supports any amount of parameters of any JSON-compatible type and it uses Promises to 
       # asynchronously access return values on success or handle failures.
-      # 
+      #
       # Ruby methods:
       # - `Bridge.new(dialog)`
       #   Creates a Bridge instance for a UI::WebDialog or UI::HtmlDialog.
@@ -22,7 +22,7 @@ module AuthorName
       # - `Bridge#get(js_function_name, *arguments).then{ |result| }`
       #   Invokes a JavaScript function and returns a promise that will be resolved 
       #   with the JavaScript function's return value.
-      # 
+      #
       # JavaScript functions:
       # - `Bridge.call(rbCallbackName, ...arguments)`
       #   Invokes a Ruby callback with multiple arguments.
@@ -379,7 +379,7 @@ module AuthorName
 
       # class Bridge
 
-      VERSION = '3.0.0' unless defined?(self::VERISON)
+      VERSION = '3.0.0' unless defined?(self::VERSION)
 
       # Add the bridge to an existing UI::WebDialog/UI::HtmlDialog.
       # This can be used for convenience and will define the bridge's methods
