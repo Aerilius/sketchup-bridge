@@ -1,0 +1,174 @@
+body {
+  /* Override the too serify default Times font. */
+  font-family: Calibri, Helvetica;
+}
+
+a {
+  color: #005596;
+  text-decoration: none;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+table {
+  width: 100%;
+  background: white;
+}
+
+table,
+td {
+  border: 1px lightGray solid;
+}
+
+tt {
+  font-size: 120%;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+pre > code.lang-javascript {
+  display: block;
+  background: #e0efff;
+  padding: 1em;
+}
+
+pre > code.lang-javascript::before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'JavaScript';
+}
+
+pre > code.lang-ruby {
+  display: block;
+  background: #fee;
+  padding: 1em;
+}
+
+pre > code.lang-ruby::before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'Ruby';
+}
+
+.example {
+  background: #fffadd;
+  padding: 1em;
+}
+
+.example::before {
+  display: block;
+  font-size: 75%;
+  color: gray;
+  content: 'Example';
+}
+
+hr {
+  border: 1px lightGray solid;
+}
+
+/* hljs */
+code,
+pre {
+  font-family: Consolas, Menlo, Monaco, "Lucida Console", "Liberation Mono", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", monospace;
+}
+
+pre > code {
+  color: #333;
+}
+
+.hljs {
+  color: #333;
+}
+
+.hljs-comment,
+.hljs-doctag {
+  color: #998;
+  font-style: italic;
+}
+
+.hljs-number,
+.ruby .hljs-constant {
+  color: #099;
+}
+
+.hljs-string,
+.hljs-tag .hljs-string,
+.tex .hljs-formula {
+  color: #d14;
+}
+
+.hljs-title,
+.hljs-name,
+.coffeescript .hljs-params,
+.scss .hljs-meta {
+  color: #d14;
+  font-weight: bold;
+}
+
+.hljs-built_in,
+.lisp .hljs-title,
+.clojure .hljs-built_in,
+.hljs-builtin-name {
+  color: #007ede;
+}
+
+.hljs-keyword,
+.javascript .hljs-title,
+.nginx .hljs-title,
+.hljs-subst,
+.hljs-request,
+.hljs-status {
+  color: #333;
+  font-weight: bold;
+}
+
+.hljs-class .hljs-title,
+.haskell .hljs-type,
+.vhdl .hljs-literal,
+.tex .hljs-command {
+  color: #458;
+  font-weight: bold;
+}
+
+/* collapsible-section */
+.collapsible-section.collapsed * {
+  display: none;
+}
+
+.collapsible-section > h1:first-child,
+.collapsible-section > h2:first-child,
+.collapsible-section > h3:first-child,
+.collapsible-section > h4:first-child {
+  display: block !important;
+}
+
+.collapsible-section > h1:first-child::before,
+.collapsible-section > h2:first-child::before,
+.collapsible-section > h3:first-child::before,
+.collapsible-section > h4:first-child::before {
+  display: inline-block;
+  content: "►";
+  transform: rotate(90deg);
+  transition: transform 0.5s;
+}
+
+.collapsible-section.collapsed > h1:first-child::before,
+.collapsible-section.collapsed > h2:first-child::before,
+.collapsible-section.collapsed > h3:first-child::before,
+.collapsible-section.collapsed > h4:first-child::before {
+  transform: rotate(0deg);
+}
+
+.collapsible-section > h1:first-child:hover,
+.collapsible-section > h2:first-child:hover,
+.collapsible-section > h3:first-child:hover,
+.collapsible-section > h4:first-child:hover {
+  cursor: pointer;
+}
