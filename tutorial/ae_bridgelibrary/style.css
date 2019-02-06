@@ -1,6 +1,6 @@
 body {
   /* Override the too serify default Times font. */
-  font-family: Calibri, Helvetica;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 a {
