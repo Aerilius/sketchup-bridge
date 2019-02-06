@@ -229,7 +229,7 @@ if (!isSketchUp()) {
       <h2 onclick="toggleClass(document.all.section_explanation, 'collapsed')">Detailed Explanation</h2>
       <section>
         <h3>Background</h3>
-        SketchUp Bridge aims to encourage good programming practices:</p>
+        <p>SketchUp Bridge aims to encourage good programming practices:</p>
         <ul>
           <li>Abstract repeated patterns into <b>functions</b> (e.g. not directly calling <tt>window.location = 'skp:callbackname'</tt>) helps maintaining code and allows to replace the implementation (like this library) at any time with little effort. (<a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself" target="blank">DRY</a>)</li>
           <li>Using proven <b>libraries</b> for handling <b>low-level operations</b> (like string concatenation, serialization of arguments and escaping). The less code you write on your own, the less errors you make (well, there could be errors in the libraries). Write as little code as necessary.</li>
@@ -246,14 +246,14 @@ if (!isSketchUp()) {
           <li><tt>catch(errorCallback)</tt> &emsp; The callback function is called when the previous promise fails. It receives the error object as parameter.</li>
           <li><tt>then(successCallback, errorCallback)</tt> &emsp; You can also provide both callbacks in a single function call.</li>
         </ul>
-        <p>All of these methods themselves return a promise, so you can chain methods as if the code in the callbacks was sequential:
+        <p>All of these methods themselves return a promise, so you can chain methods as if the code in the callbacks was sequential:</p>
   <pre><code>promise.then(callback1).then(callback2).then(callback3)</code></pre>
           or even:
   <pre><code class="lang-javascript hljs"><span class="hljs-keyword">let</span> result0 = <span class="hljs-keyword">await</span> promise
 <span class="hljs-keyword">let</span> result1 = <span class="hljs-keyword">await</span> callback1(result0)
 <span class="hljs-keyword">let</span> result2 = <span class="hljs-keyword">await</span> callback2(result1)
 <span class="hljs-keyword">let</span> result3 = <span class="hljs-keyword">await</span> callback3(result2)</code></pre>
-          Without promises all these callbacks would be spread in different places and the sequential structure would not be obvious, which makes the code hard to understand and hard to maintain.</p>
+          <p>Without promises all these callbacks would be spread in different places and the sequential structure would not be obvious, which makes the code hard to understand and hard to maintain.</p>
         <p>(For a deeper introduction to the advantages of promises, see <a href="https://www.stephanboyer.com/post/107/fun-with-promises-in-javascript" target="blank">this blog post</a>.</p>
       </section>
       <section>
@@ -271,7 +271,7 @@ if (!isSketchUp()) {
         <li>JavaScript:
           <ul>
             <li>
-              <a href="#javascript-bridge-get"><b><tt>Bridge.get(callbackname, ...args) → Promise</tt></b></a></br>
+              <a href="#javascript-bridge-get"><b><tt>Bridge.get(callbackname, ...args) → Promise</tt></b></a><br/>
               Invokes a Ruby callback and returns a promise that will be resolved with the callback's return value.
             </li>
             <li>
@@ -312,6 +312,7 @@ if (!isSketchUp()) {
             </li>
           </ul>
         </li>
+      </ul> 
     </section>
     <section>
       <h2>1 Initializing Bridge<a id="ruby-bridge-new"></a><a id="ruby-bridge-on"></a></h2>
