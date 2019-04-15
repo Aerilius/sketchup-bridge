@@ -32,7 +32,7 @@ module AE
         # The bridge library is focussed on providing communication between Ruby 
         # and HtmlDialogs or WebDialogs. It does not impose a superclass, you can
         # add its functionality directly on the dialog class.
-        AE::BridgeLibrary::Bridge.decorate(dialog)
+        Bridge.decorate(dialog)
         # You can also use it as a separate object:
         # @bridge = Bridge.new(dialog)
         # @bridge.on(callbackname) { |deferred| }

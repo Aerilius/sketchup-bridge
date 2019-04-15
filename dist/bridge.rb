@@ -2,39 +2,14 @@ module AuthorName
 
   module ExtensionName
 
-    # Optionally requires 'json.rb'
-    # Requires modules Sketchup, UI
+    class Bridge
+
+      VERSION = '3.0.1'.freeze unless defined?(self::VERSION)
+
+    end
+
 
     class Bridge
-      # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
-      # and dialogs. It supports any amount of parameters of any JSON-compatible type and it uses Promises to 
-      # asynchronously access return values on success or handle failures.
-      #
-      # Ruby methods:
-      # - `Bridge.new(dialog)`
-      #   Creates a Bridge instance for a UI::WebDialog or UI::HtmlDialog.
-      # - `Bridge.decorate(dialog)`
-      #   Alternatively adds the Bridge methods to a UI::WebDialog or UI::HtmlDialog.
-      # - `Bridge#on(callbackname) { |deferred, *arguments| }`
-      #   Registers a callback on the Bridge.
-      # - `Bridge#call(js_function_name, *arguments)`
-      #   Invokes a JavaScript function with multiple arguments.
-      # - `Bridge#get(js_function_name, *arguments).then{ |result| }`
-      #   Invokes a JavaScript function and returns a promise that will be resolved 
-      #   with the JavaScript function's return value.
-      #
-      # JavaScript functions:
-      # - `Bridge.call(rbCallbackName, ...arguments)`
-      #   Invokes a Ruby callback with multiple arguments.
-      # - `Bridge.get(rbCallbackName, ...arguments).then(function (result) { })`
-      #   Invokes a Ruby callback and returns a promise that will be resolved 
-      #   with the callback's return value.
-      # - `Bridge.puts(stringOrObject)`
-      #   Shorthand to print a string/object to the Ruby console.
-      # - `Bridge.error(errorObject)`
-      #   Shorthand to print an error to the Ruby console.
-      # 
-      # Github project: https://github.com/Aerilius/sketchup-bridge/
 
       class Promise
         # A simple promise implementation to follow the ES6 (JavaScript) Promise specification:
@@ -315,7 +290,7 @@ module AuthorName
               if on_failure.respond_to?(:call)
                 on_failure.call(error)
               end
-              log_error(error)
+              ConsolePlugin.error(error)
             end
           }
         end
@@ -377,9 +352,338 @@ module AuthorName
 
       end # class Promise
 
-      # class Bridge
+    end # class Bridge
 
-      VERSION = '3.0.0' unless defined?(self::VERSION)
+
+    # Optionally requires 'json.rb'
+    # Requires Sketchup
+    class Bridge
+
+      # For serializing objects, we choose JSON.
+      # Objects passed between bridge instances must be of JSON-compatible types:
+      #     object literal, array, string, number, boolean, null
+      # If available and compatible, we prefer JSON from the standard libraries, otherwise we use a fallback JSON converter.
+      if !defined?(Sketchup) || Sketchup.version.to_i >= 14
+        begin
+          # `Sketchup::require "json"` raises no error, but displays in the load errors popup.
+          # As a workaround, we use `load`.
+          load 'json.rb' unless defined?(::JSON)
+          # No support for option :quirks_mode ? Fallback to JSON implementation in this library.
+          raise(RuntimeError) unless ::JSON::VERSION_MAJOR >= 1 && ::JSON::VERSION_MINOR >= 6
+
+          module JSON
+            def self.generate(object)
+              # quirks_mode generates JSON from objects other than Hash and Array.
+              return ::JSON.generate(object, {:quirks_mode => true})
+            end
+            def self.parse(string)
+              return ::JSON.parse(string, {:quirks_mode => true})
+            end
+          end
+
+        rescue LoadError, RuntimeError # LoadError when loading 'json.rb', RuntimeError when version mismatch
+      
+          # Fallback JSON implementation.
+          module JSON
+
+            def self.generate(object)
+              # Split at every even number of unescaped quotes. This gives either strings
+              # or what is between strings.
+              object = self.traverse_object(object.clone){ |element| element.is_a?(Symbol) ? element.to_s : element }
+              json_string = object.inspect.split(/("(?:\\"|[^"])*")/).
+                  map { |string|
+                next string if string[0..0] == '"' # is a string in quotes
+                # If it's not a string then replace : and null
+                string.gsub(/=>/, ':')
+                .gsub(/\bnil\b/, 'null')
+              }.join('')
+              return json_string
+            end
+
+            def self.parse(string)
+              # Split at every even number of unescaped quotes. This gives either strings
+              # or what is between strings.
+              # ruby_string = json_string.split(/(\"(?:.*?[^\\])*?\")/).
+              # The outer capturing braces () are important for that ruby keeps the separator patterns in the returned array.
+              regexp_separate_strings = /("(?:\\"|[^"])*")/
+              regexp_text = /[^\d\-.:{}\[\],\s]+/
+              regexp_non_keyword = /^(true|false|null|undefined)$/
+              ruby_string = string.split(regexp_separate_strings).
+                  map{ |s|
+                # It is a string in quotes.
+                if s[0..0] == '"'
+                  # Convert escaped unicode characters because eval won't convert them.
+                  # Eval would give "u00fc" instead of "ü" for "\"\\u00fc\"".
+                  s.gsub(/\\u([\da-fA-F]{4})/) { |m|
+                    [$1].pack('H*').unpack('n*').pack('U*')
+                  }
+                else
+                  # Don't allow arbitrary textual expressions outside of strings.
+                  raise(BridgeInternalError, 'JSON string contains invalid unquoted textual expression') if s[regexp_text] && !s[regexp_text][regexp_non_keyword]
+                  # raise if s[/(true|false|null|undefined)/] && !s[/\w+/][//] # TODO
+                  # If it's not a string then replace : and null and undefined.
+                  s.gsub(/:/, '=>').
+                      gsub(/\bnull\b/, 'nil').
+                      gsub(/\bundefined\b/, 'nil')
+                end
+              }.join('')
+              result = eval(ruby_string)
+              return result
+            end
+
+            private
+
+            # Traverses containers of a JSON-like object recursively and applies a code block
+            def self.traverse_object(o, &block)
+              if o.is_a?(Array)
+                return o.map{ |v| self.traverse_object(v) }
+              elsif o.is_a?(Hash)
+                o_copy = {}
+                o.each{ |k, v|
+                  o_copy[self.traverse_object(k)] = self.traverse_object(v)
+                }
+                return o_copy
+              else
+                return block.call(o)
+              end
+            end
+            private_class_method :traverse_object
+
+          end # module JSON
+
+        end
+
+      end
+
+    end # class Bridge
+
+
+
+    # Optionally requires 'json.rb'
+
+
+
+    class Bridge
+      # Class for message properties, combining the behavior of WebDialog and Promise.
+      # SketchUp's WebDialog action callback procs receive as first argument a reference to the dialog.
+      # To direct the return value of asynchronous callbacks to the corresponding JavaScript callback, we need to
+      # remember the message ID. We retain SketchUp's default behavior by delegating to the webdialog, while adding
+      # the functionality of a promise.
+      # @!parse include UI::WebDialog
+      class ActionContext < Promise::Deferred
+
+        # @param dialog [UI::WebDialog, UI::HtmlDialog]
+        # @param id     [Fixnum, Integer]
+        # @private
+        def initialize(dialog, request_handler, id)
+          super()
+          # Resolves a query from JavaScript and returns the result to it.
+          on_resolve = Proc.new{ |*results|
+            parameters_string = Bridge::JSON.generate(results)[1...-1]
+            parameters_string = 'undefined' if parameters_string.nil? || parameters_string.empty?
+            request_handler.send({
+              :name => 'Bridge.requestHandler.receive',
+              :parameters => [@id, {:success => true, :parameters => results}]
+            })
+            nil
+          }
+          # Rejects a query from JavaScript and and give the reason/error message.
+          on_reject = Proc.new{ |*reasons|
+            #raise(ArgumentError, 'Argument `reason` must be an Exception or String.') unless reason.is_a?(Exception) || reason.is_a?(String)
+            reasons.map!{ |reason|
+              if reason.is_a?(Exception)
+                {
+                  :name => reason.class.name,
+                  :message => reason.message,
+                  :stack => reason.backtrace
+                }
+              else
+                reason
+              end
+            }
+            request_handler.send({
+              :name => 'Bridge.requestHandler.receive', 
+              :parameters => [@id, {:success => false, :parameters => reasons}]
+            })
+            nil
+          }
+          # Register these two handlers.
+          self.promise.then(on_resolve, on_reject)
+          @dialog = dialog
+          @id = id
+        end
+
+        alias_method :return, :resolve
+
+        # Make this class work as a proxy for dialog.
+        # @see UI::WebDialog
+        def method_missing(method_name, *parameters, &block)
+          return @dialog.__send__(method_name, *parameters, &block)
+        end
+
+      end # class ActionContext
+
+    end # class Bridge
+
+
+
+    class Bridge
+
+      class RequestHandler # interface
+
+        def send(message)
+          raise NotImplementedError
+        end
+
+        def receive(action_context, request)
+          raise NotImplementedError
+        end
+
+      end
+
+      class DialogRequestHandler < RequestHandler # abstract class
+
+        def initialize(dialog, bridge=nil)
+          super()
+          @dialog = dialog
+          @bridge = bridge
+        end
+
+        def send(message)
+          name = message[:name]
+          parameters_string = Bridge::JSON.generate(message[:parameters])[1...-1]
+          @dialog.execute_script("#{name}(#{parameters_string})")
+        end
+
+        private
+
+        def handle_request(action_context, request) # TODO: access to Bridge @handlers and @dialog
+          unless request.is_a?(Hash) &&
+              (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
+              request['name'].is_a?(String) &&
+              request['parameters'].is_a?(Array)
+            raise(BridgeInternalError, "Bridge received invalid data: \n#{value}")
+          end
+          id         = request['id']
+          name       = request['name']
+          parameters = request['parameters'] || []
+
+          # Here we pass a wrapper around the dialog which preserves the message ID to
+          # identify the corresponding JavaScript callback.
+          # This allows to run asynchronous code (external application etc.) and return
+          # later the result to the JavaScript callback even if the dialog has continued
+          # sending/receiving messages.
+          if request['expectsCallback']
+            response = ActionContext.new(@dialog, self, id) # TODO: access to @dialog attribute of Bridge, access to @handlers
+            begin
+              # Get the callback.
+              unless @bridge.handlers.include?(name)
+                raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
+              end
+              handler = @bridge.handlers[name]
+              handler.call(response, *parameters)
+            rescue Exception => error
+              # Reject the promise.
+              response.reject(error)
+              # Re-raise for logging.
+              raise(error)
+            end
+          else
+            # Get the callback.
+            unless @bridge.handlers.include?(name)
+              raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
+            end
+            handler = @bridge.handlers[name]
+            handler.call(@dialog, *parameters)
+          end
+        end
+    
+        # TODO: refactor, remove redundancy with same method in Bridge
+        def log_error(error, metadata={})
+          if defined?(AE::ConsolePlugin)
+            ConsolePlugin.error(error, metadata)
+          elsif error.is_a?(Exception)
+            $stderr << "#{error.class.name}: #{error.message}" << $/
+            $stderr << error.backtrace.join($/) << $/
+          else
+            $stderr << error << $/
+            $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
+          end
+        end
+        private :log_error
+      end
+
+      class RequestHandlerHtmlDialog < DialogRequestHandler
+
+        # Receives the raw messages from the HtmlDialog (Bridge.call) and chooses the corresponding callbacks.
+        # @private Not for public use.
+        # @param   action_context [UI::ActionContext]
+        # @param   request        [Object]
+        # @private
+        def receive(action_context, request)
+          handle_request(action_context, request) # TODO: or refactor this into a separate method in Bridge class?
+        rescue Exception => error
+          log_error(error)
+        end
+    
+      end
+  
+      class RequestHandlerWebDialog < DialogRequestHandler
+
+        # Receives the raw messages from the WebDialog (Bridge.call) and chooses the corresponding callbacks.
+        # @private Not for public use.
+        # @param   dialog           [UI::WebDialog]
+        # @param   parameter_string [String]
+        def receive(action_context, parameter_string)
+          # Get message data from the hidden input element.
+          value   = dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
+          request = Bridge::JSON.parse(value)
+          handle_request(action_context, request)
+        rescue Exception => error
+          log_error(error)
+        ensure
+          # Acknowledge that the message has been received and enable the bridge to send
+          # the next message if available.
+          @bridge.call('Bridge.requestHandler.ack') # TODO: access to bridge instance needed
+        end
+
+      end
+
+    end # class Bridge
+
+
+    # Requires modules UI
+
+    class Bridge
+      # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
+      # and dialogs. It supports any amount of parameters of any JSON-compatible type and it uses Promises to 
+      # asynchronously access return values on success or handle failures.
+      #
+      # Ruby methods:
+      # - `Bridge.new(dialog)`
+      #   Creates a Bridge instance for a UI::WebDialog or UI::HtmlDialog.
+      # - `Bridge.decorate(dialog)`
+      #   Alternatively adds the Bridge methods to a UI::WebDialog or UI::HtmlDialog.
+      # - `Bridge#on(callbackname) { |deferred, *arguments| }`
+      #   Registers a callback on the Bridge.
+      # - `Bridge#call(js_function_name, *arguments)`
+      #   Invokes a JavaScript function with multiple arguments.
+      # - `Bridge#get(js_function_name, *arguments).then{ |result| }`
+      #   Invokes a JavaScript function and returns a promise that will be resolved 
+      #   with the JavaScript function's return value.
+      #
+      # JavaScript functions:
+      # - `Bridge.call(rbCallbackName, ...arguments)`
+      #   Invokes a Ruby callback with multiple arguments.
+      # - `Bridge.get(rbCallbackName, ...arguments).then(function (result) { })`
+      #   Invokes a Ruby callback and returns a promise that will be resolved 
+      #   with the callback's return value.
+      # - `Bridge.puts(stringOrObject)`
+      #   Shorthand to print a string/object to the Ruby console.
+      # - `Bridge.error(errorObject)`
+      #   Shorthand to print an error to the Ruby console.
+      # 
+      # Github project: https://github.com/Aerilius/sketchup-bridge/
 
       # Add the bridge to an existing UI::WebDialog/UI::HtmlDialog.
       # This can be used for convenience and will define the bridge's methods
@@ -390,6 +694,9 @@ module AuthorName
         bridge = self.new(dialog)
         dialog.instance_variable_set(:@bridge, bridge)
 
+        #[:on, :once, :off, :call, :get].each{ |method_name|
+        #  define_method on dialog that receives same parameters as bridge.method(method_name)
+        #}
         def dialog.bridge
           return @bridge
         end
@@ -471,19 +778,19 @@ module AuthorName
       # TODO: Catch JavaScript errors!
       def call(name, *parameters)
         raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w\.]+$/]
-        parameters_string = self.class.serialize(parameters)
-        parameters_string = 'undefined' if parameters_string.nil? || parameters_string.empty?
-        @dialog.execute_script("#{name}.apply(undefined, #{parameters_string})")
+        @request_handler.send({
+          :name => name,
+          :parameters => parameters
+        })
       end
 
       # Call a JavaScript function with JSON parameters in the webdialog and get the
       # return value in a promise.
-      # @param  name        [String]  The name of a public JavaScript function
-      # @param  *parameters [Object]  An array of JSON-compatible objects
-      # @return             [Promise]
-      def get(name, *parameters)
-        raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w\.]+$/]
-        parameter_string = self.class.serialize(parameters)
+      # @param  function_name [String]  The name of a public JavaScript function
+      # @param  *parameters   [Object]  An array of JSON-compatible objects
+      # @return               [Promise]
+      def get(function_name, *parameters)
+        raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w\.]+$/]
         return Promise.new { |resolve, reject|
           handler_name = create_unique_handler_name('resolve/reject')
           once(handler_name) { |action_context, success, *parameters|
@@ -493,33 +800,14 @@ module AuthorName
               reject.call(*parameters)
             end
           }
-          @dialog.execute_script(
-            <<-SCRIPT
-            (function(Bridge) {
-                try {
-                    new Bridge.Promise(function (resolve, reject) {
-                        // The called function may either immediately return a result or a Promise.
-                        resolve(#{name}.apply(undefined, #{parameter_string}));
-                    }).then(function (result) {
-                        Bridge.call('#{handler_name}', true, result);
-                    }, function (error) {
-                        if (error instanceof Error) {
-                            error = error.name + ': ' + error.message + (error.stack ? '\\n' + error.stack : '');
-                        }
-                        Bridge.call('#{handler_name}', false, error);
-                    });
-                } catch (error) {
-                    if (error instanceof Error) {
-                        error = error.name + ': ' + error.message + (error.stack ? '\\n' + error.stack : '');
-                    }
-                    Bridge.call('#{handler_name}', false, error);
-                    Bridge.error(error);
-                }
-            })(#{JSMODULE});
-            SCRIPT
-          )
+          @request_handler.send({
+            :name => 'Bridge.requestHandler.get',
+            :parameters => [handler_name, function_name, *parameters]
+          })
         }
       end
+
+      attr_reader :handlers ### TODO: handlers only for debugging
 
       private
 
@@ -533,114 +821,23 @@ module AuthorName
 
       # Create an instance of the Bridge and associate it with a dialog.
       # @param dialog [UI::HtmlDialog, UI::WebDialog]
-      def initialize(dialog)
+      def initialize(dialog, request_handler=nil)
         raise(ArgumentError, 'Argument `dialog` must be a UI::HtmlDialog or UI::WebDialog.') unless defined?(UI::HtmlDialog) && dialog.is_a?(UI::HtmlDialog) || dialog.is_a?(UI::WebDialog)
         @dialog         = dialog
         @handlers       = {}
 
-        if defined?(UI::HtmlDialog) && dialog.is_a?(UI::HtmlDialog) # SketchUp 2017+
-          # Workaround issue: Failure to register new callbacks in Chromium, thus overwriting the existing, unused "LoginSuccess".
-          @dialog.add_action_callback("LoginSuccess", &method(:__request_handler_htmldialog__))
+        if request_handler.nil?
+          if defined?(UI::HtmlDialog) && dialog.is_a?(UI::HtmlDialog) # SketchUp 2017+
+            @request_handler = RequestHandlerHtmlDialog.new(dialog, self)
+          else
+            @request_handler = RequestHandlerWebDialog.new(dialog, self)
+          end
         else
-          @dialog.add_action_callback("#{NAMESPACE}.receive", &method(:__request_handler_webdialog__))
+          @request_handler = request_handler
         end
+        @dialog.add_action_callback('LoginSuccess', &@request_handler.method(:receive)) ### TODO: use Bridge.receive
+
         add_default_handlers
-      end
-
-      # Receives the raw messages from the WebDialog (Bridge.call) and calls the individual callbacks.
-      # @private Not for public use.
-      # @param   action_context [UI::ActionContext]
-      # @param   request        [Object]
-      # @private
-      def __request_handler_htmldialog__(action_context, request)
-        unless request.is_a?(Hash) &&
-            (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
-            request['name'].is_a?(String) &&
-            request['parameters'].is_a?(Array)
-          raise(BridgeInternalError, "Bridge received invalid data: \n#{value}")
-        end
-        id         = request['id']
-        name       = request['name']
-        parameters = request['parameters'] || []
-
-        # Here we pass a wrapper around the dialog which preserves the message id to
-        # identify the corresponding JavaScript callback.
-        # This allows to run asynchronous code (external application etc.) and return
-        # later the result to the JavaScript callback even if the dialog has continued
-        # sending/receiving messages.
-        if request['expectsCallback']
-          response = ActionContext.new(@dialog, id)
-          begin
-            # Get the callback.
-            unless @handlers.include?(name)
-              raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
-            end
-            handler = @handlers[name]
-            handler.call(response, *parameters)
-          rescue Exception => error
-            # Reject the promise.
-            response.reject(error)
-            # Re-raise for logging.
-            raise(error)
-          end
-        else
-          # Get the callback.
-          unless @handlers.include?(name)
-            raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
-          end
-          handler = @handlers[name]
-          handler.call(@dialog, *parameters)
-        end
-
-      rescue Exception => error
-        log_error(error)
-      end
-
-      # Receives the raw messages from the WebDialog (Bridge.call) and calls the individual callbacks.
-      # @param   dialog           [UI::WebDialog]
-      # @param   parameter_string [String]
-      def __request_handler_webdialog__(dialog, parameter_string)
-        # Get message data from the hidden input element.
-        value   = dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
-        request = self.class.unserialize(value)
-        unless request.is_a?(Hash) &&
-            (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
-            request['name'].is_a?(String) &&
-            request['parameters'].is_a?(Array)
-          raise(BridgeInternalError, "Bridge received invalid data: \n#{value}")
-        end
-        id         = request['id']
-        name       = request['name']
-        parameters = request['parameters'] || []
-
-        # Here we pass a wrapper around the dialog which preserves the message id to
-        # identify the corresponding JavaScript callback.
-        # This allows to run asynchronous code (external application etc.) and return
-        # later the result to the JavaScript callback even if the dialog has continued
-        # sending/receiving messages.
-        response = (request['expectsCallback']) ? ActionContext.new(dialog, id) : dialog
-        # Get the callback.
-        unless @handlers.include?(name)
-          error = BridgeRemoteError.new("No registered callback `#{name}` for #{dialog} found.")
-          response.reject(error)
-          raise(error)
-        end
-        handler = @handlers[name]
-        begin
-          handler.call(response, *parameters)
-        rescue Exception => error
-          # Reject the promise.
-          response.reject(error)
-          # Re-raise for logging.
-          raise(error)
-        end
-
-      rescue Exception => error
-        log_error(error)
-      ensure
-        # Acknowledge that the message has been received and enable the bridge to send
-        # the next message if available.
-        dialog.execute_script("#{JSMODULE}.__ack__()")
       end
 
       # Add additional optional handlers for calls from JavaScript to Ruby.
@@ -669,171 +866,7 @@ module AuthorName
         return handler_name
       end
 
-      # Class for message properties, combining the behavior of WebDialog and Promise.
-      # SketchUp's WebDialog action callback procs receive as first argument a reference to the dialog.
-      # To direct the return value of asynchronous callbacks to the corresponding JavaScript callback, we need to
-      # remember the message id. We retain SketchUp's default behavior by delegating to the webdialog, while adding
-      # the functionality of a promise.
-      # @!parse include UI::WebDialog
-      class ActionContext < Promise::Deferred
-
-        # @param dialog [UI::WebDialog, UI::HtmlDialog]
-        # @param id     [Fixnum, Integer]
-        # @private
-        def initialize(dialog, id)
-          super()
-          # Resolves a query from JavaScript and returns the result to it.
-          on_resolve = Proc.new{ |*results|
-            parameters_string = Bridge.serialize(results)[1...-1]
-            parameters_string = 'undefined' if parameters_string.nil? || parameters_string.empty?
-            @dialog.execute_script("#{JSMODULE}.__resolve__(#{@id}, #{parameters_string})")
-            nil
-          }
-          # Rejects a query from JavaScript and and give the reason/error message.
-          on_reject = Proc.new{ |reason|
-            #raise(ArgumentError, 'Argument `reason` must be an Exception or String.') unless reason.is_a?(Exception) || reason.is_a?(String)
-            if reason.is_a?(Exception)
-              error_class = case Exception
-              when NameError then
-                'ReferenceError'
-              when SyntaxError then
-                'SyntaxError'
-              when TypeError then
-                'TypeError'
-              when ArgumentError then
-                'TypeError'
-              else # any Exception
-                'Error'
-              end
-              backtrace = reason.backtrace.join($/)
-              reason = "#{JSMODULE}.__create_error__(#{error_class.inspect}, #{reason.message.inspect}, #{backtrace.inspect})"
-            elsif reason.is_a?(String)
-              reason = reason.inspect
-            else
-              reason = Bridge.serialize(reason)
-            end
-            @dialog.execute_script("#{JSMODULE}.__reject__(#{@id}, #{reason})")
-            nil
-          }
-          # Register these two handlers.
-          self.promise.then(on_resolve, on_reject)
-          @dialog = dialog
-          @id     = id
-        end
-
-        alias_method :return, :resolve
-
-        # Delegate other method calls to the dialog.
-        # @see UI::WebDialog
-        def method_missing(method_name, *parameters, &block)
-          return @dialog.__send__(method_name, *parameters, &block)
-        end
-
-      end # class ActionContext
-
-      # For serializing objects, we choose JSON.
-      # Objects passed between bridge instances must be of JSON-compatible types:
-      #     object literal, array, string, number, boolean, null
-      # If available and compatible, we prefer JSON from the standard libraries, otherwise we use a fallback JSON converter.
-      if !defined?(Sketchup) || Sketchup.version.to_i >= 14
-        begin
-          # `Sketchup::require "json"` raises no error, but displays in the load errors popup.
-          # As a workaround, we use `load`.
-          load 'json.rb' unless defined?(JSON)
-          # No support for option :quirks_mode ? Fallback to JSON implementation in this library.
-          raise(RuntimeError) unless JSON::VERSION_MAJOR >= 1 && JSON::VERSION_MINOR >= 6
-
-          # Serializes an object.
-          # @param  object [Object]
-          # @return        [String]
-          # @private
-          def self.serialize(object)
-            # quirks_mode generates JSON from objects other than Hash and Array.
-            return JSON.generate(object, {:quirks_mode => true})
-          end
-
-          # Unserializes the string representation of a serialized object.
-          # @param  string [String]
-          # @return        [Object]
-          # @private
-          def self.unserialize(string)
-            return JSON.parse(string, {:quirks_mode => true})
-          end
-
-        rescue LoadError, RuntimeError # LoadError when loading 'json.rb', RuntimeError when version mismatch
-          # Fallback JSON implementation.
-
-          # @private
-          def self.serialize(object)
-            # Split at every even number of unescaped quotes. This gives either strings
-            # or what is between strings.
-            object = normalize_object(object.clone)
-            json_string = object.inspect.split(/("(?:\\"|[^"])*")/).
-                map { |string|
-              next string if string[0..0] == '"' # is a string in quotes
-              # If it's not a string then replace : and null
-              string.gsub(/=>/, ':')
-              .gsub(/\bnil\b/, 'null')
-            }.join('')
-            return json_string
-          end
-
-          # @private
-          def self.unserialize(string)
-            # Split at every even number of unescaped quotes. This gives either strings
-            # or what is between strings.
-            # ruby_string = json_string.split(/(\"(?:.*?[^\\])*?\")/).
-            # The outer capturing braces () are important for that ruby keeps the separator patterns in the returned array.
-            regexp_separate_strings = /("(?:\\"|[^"])*")/
-            regexp_text = /[^\d\-.:{}\[\],\s]+/
-            regexp_non_keyword = /^(true|false|null|undefined)$/
-            ruby_string = string.split(regexp_separate_strings).
-                map{ |s|
-              # It is a string in quotes.
-              if s[0..0] == '"'
-                # Convert escaped unicode characters because eval won't convert them.
-                # Eval would give "u00fc" instead of "ü" for "\"\\u00fc\"".
-                s.gsub(/\\u([\da-fA-F]{4})/) { |m|
-                  [$1].pack('H*').unpack('n*').pack('U*')
-                }
-              else
-                # Don't allow arbitrary textual expressions outside of strings.
-                raise(BridgeInternalError, 'JSON string contains invalid unquoted textual expression') if s[regexp_text] && !s[regexp_text][regexp_non_keyword]
-                # raise if s[/(true|false|null|undefined)/] && !s[/\w+/][//] # TODO
-                # If it's not a string then replace : and null and undefined.
-                s.gsub(/:/, '=>').
-                    gsub(/\bnull\b/, 'nil').
-                    gsub(/\bundefined\b/, 'nil')
-              end
-            }.join('')
-            result = eval(ruby_string)
-            return result
-          end
-
-          private
-
-          def self.normalize_object(o)
-            if o.is_a?(Array)
-              return o.map{ |v| normalize_object(v) }
-            elsif o.is_a?(Hash)
-              o2 = {}
-              o.each{ |k, v|
-                o2[normalize_object(k)] = normalize_object(v)
-              }
-              return o2
-            elsif o.is_a?(Symbol)
-              return o.to_s
-            else
-              return o
-            end
-          end
-          private_class_method :normalize_object
-
-        end
-
-      end
-
-      def log_error(error, metadata={})
+      def log_error(error, metadata={}) # TODO: duplicate
         if defined?(AE::ConsolePlugin)
           ConsolePlugin.error(error, metadata)
         elsif error.is_a?(Exception)
@@ -873,6 +906,7 @@ module AuthorName
       end
 
     end # class Bridge
+
 
   end
 

@@ -14,7 +14,7 @@ module AE
 
       # Attach some nice info.
       ext.creator     = 'Aerilius'
-      ext.version     = AE::BridgeLibrary::Bridge::VERSION
+      ext.version     = AE::BridgeLibrary::Tutorial::Bridge::VERSION
       ext.copyright   = '2015-2019, Andreas Eisenbarth'
       ext.description = 'A tutorial for the Bridge library that makes HtmlDialogs easy.'
 
