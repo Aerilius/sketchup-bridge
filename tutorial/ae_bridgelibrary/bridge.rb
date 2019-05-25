@@ -528,9 +528,35 @@ module AE
       end # class Bridge
 
 
+      class Bridge
+
+
+        # @private
+        module Utils
+
+          def self.log_error(error, metadata={})
+            if defined?(AE::ConsolePlugin)
+              AE::ConsolePlugin.error(error, metadata)
+            elsif error.is_a?(Exception)
+              $stderr << "#{error.class.name}: #{error.message}" << $/
+              $stderr << error.backtrace.join($/) << $/
+            else
+              $stderr << error << $/
+              $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
+            end
+          end
+
+
+        end
+
+
+      end
+
+
 
       class Bridge
 
+        # @private
         class RequestHandler # interface
 
           def send(message)
@@ -543,6 +569,7 @@ module AE
 
         end
 
+        # @private
         class DialogRequestHandler < RequestHandler # abstract class
 
           def initialize(dialog, bridge=nil)
@@ -559,7 +586,7 @@ module AE
 
           private
 
-          def handle_request(action_context, request) # TODO: access to Bridge @handlers and @dialog
+          def handle_request(action_context, request) # FIXME: Avoid access to Bridge @handlers and @dialog
             unless request.is_a?(Hash) &&
                 (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
                 request['name'].is_a?(String) &&
@@ -576,7 +603,7 @@ module AE
             # later the result to the JavaScript callback even if the dialog has continued
             # sending/receiving messages.
             if request['expectsCallback']
-              response = ActionContext.new(@dialog, self, id) # TODO: access to @dialog attribute of Bridge, access to @handlers
+              response = ActionContext.new(@dialog, self, id)
               begin
                 # Get the callback.
                 unless @bridge.handlers.include?(name)
@@ -599,22 +626,10 @@ module AE
               handler.call(@dialog, *parameters)
             end
           end
-    
-          # TODO: refactor, remove redundancy with same method in Bridge
-          def log_error(error, metadata={})
-            if defined?(AE::ConsolePlugin)
-              ConsolePlugin.error(error, metadata)
-            elsif error.is_a?(Exception)
-              $stderr << "#{error.class.name}: #{error.message}" << $/
-              $stderr << error.backtrace.join($/) << $/
-            else
-              $stderr << error << $/
-              $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
-            end
-          end
-          private :log_error
+
         end
 
+        # @private
         class RequestHandlerHtmlDialog < DialogRequestHandler
 
           # Receives the raw messages from the HtmlDialog (Bridge.call) and chooses the corresponding callbacks.
@@ -623,13 +638,14 @@ module AE
           # @param   request        [Object]
           # @private
           def receive(action_context, request)
-            handle_request(action_context, request) # TODO: or refactor this into a separate method in Bridge class?
+            handle_request(action_context, request)
           rescue Exception => error
-            log_error(error)
+            Utils.log_error(error)
           end
-    
+
         end
-  
+
+        # @private
         class RequestHandlerWebDialog < DialogRequestHandler
 
           # Receives the raw messages from the WebDialog (Bridge.call) and chooses the corresponding callbacks.
@@ -642,11 +658,11 @@ module AE
             request = Bridge::JSON.parse(value)
             handle_request(action_context, request)
           rescue Exception => error
-            log_error(error)
+            Utils.log_error(error)
           ensure
             # Acknowledge that the message has been received and enable the bridge to send
             # the next message if available.
-            @bridge.call('Bridge.requestHandler.ack') # TODO: access to bridge instance needed
+            @bridge.call('Bridge.requestHandler.ack')
           end
 
         end
@@ -654,7 +670,9 @@ module AE
       end # class Bridge
 
 
-      # Requires modules UI
+
+
+      # Requires SketchUp module UI
 
       class Bridge
         # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
@@ -753,7 +771,6 @@ module AE
         #                                             {ActionContext#resolve} and {ActionContext#resolve} to return results to the dialog.
         # @yieldparam parameters [Array<Object>]      The JSON-compatible parameters passed from the dialog.
         # @return                [self]
-        # TODO: Maybe allow many handlers for the same name?
         def once(name, &callback)
           raise(ArgumentError, 'Argument `name` must be a String.') unless name.is_a?(String)
           raise(ArgumentError, "Argument `name` can not be `#{name}`.") if RESERVED_NAMES.include?(name)
@@ -809,7 +826,8 @@ module AE
           }
         end
 
-        attr_reader :handlers ### TODO: handlers only for debugging
+        # @private
+        attr_reader :handlers
 
         private
 
@@ -819,6 +837,8 @@ module AE
         JSMODULE = 'Bridge'
         # Names that are used internally and not allowed to be used as callback handler names.
         RESERVED_NAMES = []
+        # Callback name where JavaScript messages are received.
+        CALLBACKNAME = 'Bridge.receive'
         attr_reader :dialog
 
         # Create an instance of the Bridge and associate it with a dialog.
@@ -837,7 +857,7 @@ module AE
           else
             @request_handler = request_handler
           end
-          @dialog.add_action_callback('LoginSuccess', &@request_handler.method(:receive)) ### TODO: use Bridge.receive
+          @dialog.add_action_callback(CALLBACKNAME, &@request_handler.method(:receive))
 
           add_default_handlers
         end
@@ -852,7 +872,7 @@ module AE
 
           # Error channel (for debugging)
           @handlers["#{NAMESPACE}.error"] = Proc.new { |dialog, type, message, backtrace|
-            log_error(type + ': ' + message, {:language => 'javascript', :backtrace => backtrace})
+            Utils.log_error(type + ': ' + message, {:language => 'javascript', :backtrace => backtrace})
           }
           RESERVED_NAMES << "#{NAMESPACE}.error"
         end
@@ -867,19 +887,6 @@ module AE
           end while @handlers.include?(handler_name)
           return handler_name
         end
-
-        def log_error(error, metadata={}) # TODO: duplicate
-          if defined?(AE::ConsolePlugin)
-            ConsolePlugin.error(error, metadata)
-          elsif error.is_a?(Exception)
-            $stderr << "#{error.class.name}: #{error.message}" << $/
-            $stderr << error.backtrace.join($/) << $/
-          else
-            $stderr << error << $/
-            $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
-          end
-        end
-        private :log_error
 
         # An error caused by malfunctioning of this library.
         # @private
