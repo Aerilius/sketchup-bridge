@@ -1,5 +1,6 @@
 require(File.expand_path('../json_polyfill.rb', __FILE__))
 require(File.expand_path('../action_context.rb', __FILE__))
+require(File.expand_path('../utils.rb', __FILE__))
 
 class Bridge
 
@@ -31,7 +32,7 @@ class Bridge
 
     private
 
-    def handle_request(action_context, request) # TODO: access to Bridge @handlers and @dialog
+    def handle_request(action_context, request) # FIXME: Avoid access to Bridge @handlers and @dialog
       unless request.is_a?(Hash) &&
           (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
           request['name'].is_a?(String) &&
@@ -48,7 +49,7 @@ class Bridge
       # later the result to the JavaScript callback even if the dialog has continued
       # sending/receiving messages.
       if request['expectsCallback']
-        response = ActionContext.new(@dialog, self, id) # TODO: access to @dialog attribute of Bridge, access to @handlers
+        response = ActionContext.new(@dialog, self, id)
         begin
           # Get the callback.
           unless @bridge.handlers.include?(name)
@@ -71,20 +72,7 @@ class Bridge
         handler.call(@dialog, *parameters)
       end
     end
-    
-    # TODO: refactor, remove redundancy with same method in Bridge
-    def log_error(error, metadata={})
-      if defined?(AE::ConsolePlugin)
-        ConsolePlugin.error(error, metadata)
-      elsif error.is_a?(Exception)
-        $stderr << "#{error.class.name}: #{error.message}" << $/
-        $stderr << error.backtrace.join($/) << $/
-      else
-        $stderr << error << $/
-        $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
-      end
-    end
-    private :log_error
+
   end
 
   class RequestHandlerHtmlDialog < DialogRequestHandler
@@ -95,13 +83,13 @@ class Bridge
     # @param   request        [Object]
     # @private
     def receive(action_context, request)
-      handle_request(action_context, request) # TODO: or refactor this into a separate method in Bridge class?
+      handle_request(action_context, request)
     rescue Exception => error
-      log_error(error)
+      Utils.log_error(error)
     end
-    
+
   end
-  
+
   class RequestHandlerWebDialog < DialogRequestHandler
 
     # Receives the raw messages from the WebDialog (Bridge.call) and chooses the corresponding callbacks.
@@ -114,11 +102,11 @@ class Bridge
       request = Bridge::JSON.parse(value)
       handle_request(action_context, request)
     rescue Exception => error
-      log_error(error)
+      Utils.log_error(error)
     ensure
       # Acknowledge that the message has been received and enable the bridge to send
       # the next message if available.
-      @bridge.call('Bridge.requestHandler.ack') # TODO: access to bridge instance needed
+      @bridge.call('Bridge.requestHandler.ack')
     end
 
   end

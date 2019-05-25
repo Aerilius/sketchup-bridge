@@ -2,7 +2,8 @@ require(File.expand_path('../version.rb', __FILE__))
 require(File.expand_path('../promise.rb', __FILE__))
 require(File.expand_path('../json_polyfill.rb', __FILE__))
 require(File.expand_path('../request_handler.rb', __FILE__))
-# Requires modules UI
+require(File.expand_path('../utils.rb', __FILE__))
+# Requires SketchUp module UI
 
 class Bridge
   # This Bridge provides an intuitive and asynchronous API for message passing between SketchUp's Ruby environment 
@@ -101,7 +102,6 @@ class Bridge
   #                                             {ActionContext#resolve} and {ActionContext#resolve} to return results to the dialog.
   # @yieldparam parameters [Array<Object>]      The JSON-compatible parameters passed from the dialog.
   # @return                [self]
-  # TODO: Maybe allow many handlers for the same name?
   def once(name, &callback)
     raise(ArgumentError, 'Argument `name` must be a String.') unless name.is_a?(String)
     raise(ArgumentError, "Argument `name` can not be `#{name}`.") if RESERVED_NAMES.include?(name)
@@ -157,7 +157,7 @@ class Bridge
     }
   end
 
-  attr_reader :handlers ### TODO: handlers only for debugging
+  attr_reader :handlers
 
   private
 
@@ -185,7 +185,7 @@ class Bridge
     else
       @request_handler = request_handler
     end
-    @dialog.add_action_callback('LoginSuccess', &@request_handler.method(:receive)) ### TODO: use Bridge.receive
+    @dialog.add_action_callback('LoginSuccess', &@request_handler.method(:receive))
 
     add_default_handlers
   end
@@ -200,7 +200,7 @@ class Bridge
 
     # Error channel (for debugging)
     @handlers["#{NAMESPACE}.error"] = Proc.new { |dialog, type, message, backtrace|
-      log_error(type + ': ' + message, {:language => 'javascript', :backtrace => backtrace})
+      Utils.log_error(type + ': ' + message, {:language => 'javascript', :backtrace => backtrace})
     }
     RESERVED_NAMES << "#{NAMESPACE}.error"
   end
@@ -215,19 +215,6 @@ class Bridge
     end while @handlers.include?(handler_name)
     return handler_name
   end
-
-  def log_error(error, metadata={}) # TODO: duplicate
-    if defined?(AE::ConsolePlugin)
-      ConsolePlugin.error(error, metadata)
-    elsif error.is_a?(Exception)
-      $stderr << "#{error.class.name}: #{error.message}" << $/
-      $stderr << error.backtrace.join($/) << $/
-    else
-      $stderr << error << $/
-      $stderr << metadata[:backtrace].join($/) << $/ if metadata.include?(:backtrace)
-    end
-  end
-  private :log_error
 
   # An error caused by malfunctioning of this library.
   # @private
