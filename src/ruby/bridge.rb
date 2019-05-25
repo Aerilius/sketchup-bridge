@@ -157,6 +157,7 @@ class Bridge
     }
   end
 
+  # @private
   attr_reader :handlers
 
   private

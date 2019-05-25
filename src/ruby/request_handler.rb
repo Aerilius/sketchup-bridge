@@ -4,6 +4,7 @@ require(File.expand_path('../utils.rb', __FILE__))
 
 class Bridge
 
+  # @private
   class RequestHandler # interface
 
     def send(message)
@@ -16,6 +17,7 @@ class Bridge
 
   end
 
+  # @private
   class DialogRequestHandler < RequestHandler # abstract class
 
     def initialize(dialog, bridge=nil)
@@ -75,6 +77,7 @@ class Bridge
 
   end
 
+  # @private
   class RequestHandlerHtmlDialog < DialogRequestHandler
 
     # Receives the raw messages from the HtmlDialog (Bridge.call) and chooses the corresponding callbacks.
@@ -90,6 +93,7 @@ class Bridge
 
   end
 
+  # @private
   class RequestHandlerWebDialog < DialogRequestHandler
 
     # Receives the raw messages from the WebDialog (Bridge.call) and chooses the corresponding callbacks.

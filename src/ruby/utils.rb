@@ -1,8 +1,8 @@
 class Bridge
 
 
+  # @private
   module Utils
-
 
     def self.log_error(error, metadata={})
       if defined?(AE::ConsolePlugin)
