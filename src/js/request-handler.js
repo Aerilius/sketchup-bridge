@@ -3,7 +3,7 @@ export function cleanUpScripts() {
   if (typeof document !== 'undefined' && document.body) {
     let scriptElements = document.body.getElementsByTagName('script')
     for (var i = 0; i < scriptElements.length; i++) {
-      document.body.removeChild(scriptElements[i])
+      scriptElements[i].parentElement.removeChild(scriptElements[i])
     }
   }
 }
