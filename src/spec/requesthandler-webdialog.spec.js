@@ -24,7 +24,7 @@ class LocationMock {
   }
 }
 
-describe('RequestHandler for HtmlDialog', () => {
+describe('RequestHandler for WebDialog', () => {
   let messageIdGenerator
   let locationHrefSpy
   let location
