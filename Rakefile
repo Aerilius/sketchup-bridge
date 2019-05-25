@@ -5,15 +5,6 @@ require 'pathname'
 require_relative 'tools/ruby_build_tools'
 require_relative 'src/ruby/version.rb'
 
-BRIDGE_LIB_FILES = %w{
-  src/ruby/version.rb
-  src/ruby/promise.rb
-  src/ruby/json-polyfill.rb
-  src/ruby/action_context.rb
-  src/ruby/requesthandler.rb
-  src/ruby/bridge.rb
-}
-
 Rake::TestTask.new(:test) do |t|
   t.libs << 'test'
   t.libs << 'src'
@@ -23,7 +14,6 @@ end
 desc 'Builds a distributable library'
 task :build_dist do
   # Compile the bridge library files into a single bundle file
-  #concatenated = concatenate(read(BRIDGE_LIB_FILES))
   concatenated = bundle_dependencies('src/ruby/bridge.rb')
   namespaced = wrap_in_namespace(concatenated, [{:module => 'AuthorName'}, {:module => 'ExtensionName'}])
   write('dist/bridge.rb', namespaced)
@@ -32,7 +22,6 @@ end
 desc 'Builds sample extension files'
 task :build_sample_extension do
   # Compile the bridge library files into a single bundle file
-  #concatenated = concatenate(read(BRIDGE_LIB_FILES))
   concatenated = bundle_dependencies('src/ruby/bridge.rb')
   namespaced = wrap_in_namespace(concatenated, [{:module => 'AuthorName'}, {:module => 'SampleExtension'}])
   write('sample/sample_extension/bridge.rb', namespaced)
@@ -41,7 +30,6 @@ end
 desc 'Builds tutorial files and builds extension (.rbz)'
 task :build_tutorial do
   # Compile the bridge library files into a single bundle file
-  #concatenated = concatenate(read(BRIDGE_LIB_FILES))
   concatenated = bundle_dependencies('src/ruby/bridge.rb')
   namespaced = wrap_in_namespace(concatenated, [{:module => 'AE'}, {:module => 'BridgeLibrary'}, {:module => 'Tutorial'}])
   write('tutorial/ae_bridgelibrary/bridge.rb', namespaced)
