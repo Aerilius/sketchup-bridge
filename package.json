@@ -1,23 +1,28 @@
 {
   "name": "sketchup-bridge",
-  "version": "1.0.0",
-  "description": "A bidirectional communication system between WebDialogs and the SketchUp Ruby environment ",
+  "version": "3.0.1",
+  "description": "A bidirectional communication system between WebDialogs and the SketchUp Ruby environment",
   "author": "Aerilius",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git://github.com/Aerilius/sketchup-bridge.git"
   },
+  "main": "dist/bridge.js",
   "scripts": {
-    "release": "npm run build && npm run build_ruby",
-    "build_ruby": "bundle exec rake build_dist build_sample_extension build_tutorial",
+    "build_all": "npm run build && npm run build_ruby",
+    "build_only_library": "npm run build && bundle exec rake build_dist",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
+    "build_ruby": "bundle exec rake build_dist build_sample_extension build_tutorial",
     "dev": "cross-env NODE_ENV=development webpack --progress --hide-modules",
     "dev-server": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "test": "mocha build/spec.bundle.js",
     "reformat": "prettier --write \"js/**/*.js\" \"spec/**/*.js\"",
     "lint": "eslint \"src/**/*.js\""
   },
+  "files": [
+    "dist/bridge.js"
+  ],
   "dependencies": {},
   "devDependencies": {
     "babel": "^6.23.0",
