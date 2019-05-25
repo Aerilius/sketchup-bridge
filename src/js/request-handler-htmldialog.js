@@ -1,7 +1,7 @@
 import RequestHandler, { IdGenerator } from './request-handler.js'
 
 // Workaround issue: Failure to register new callbacks in Chromium, thus overwriting the existing, unused "LoginSuccess".
-const CALLBACKNAME = 'LoginSuccess' // 'Bridge.receive'
+const CALLBACKNAME = 'Bridge.receive'
 
 export default class HtmlDialogRequestHandler extends RequestHandler {
   constructor({

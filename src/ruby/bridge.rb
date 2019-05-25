@@ -167,6 +167,8 @@ class Bridge
   JSMODULE = 'Bridge'
   # Names that are used internally and not allowed to be used as callback handler names.
   RESERVED_NAMES = []
+  # Callback name where JavaScript messages are received.
+  CALLBACKNAME = 'Bridge.receive'
   attr_reader :dialog
 
   # Create an instance of the Bridge and associate it with a dialog.
@@ -185,7 +187,7 @@ class Bridge
     else
       @request_handler = request_handler
     end
-    @dialog.add_action_callback('LoginSuccess', &@request_handler.method(:receive))
+    @dialog.add_action_callback(CALLBACKNAME, &@request_handler.method(:receive))
 
     add_default_handlers
   end

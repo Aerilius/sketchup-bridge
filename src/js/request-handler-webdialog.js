@@ -7,7 +7,7 @@ import RequestHandler, {
  * The url which responds to requests.
  * @constant {string}
  */
-const URL_RECEIVE = 'skp:LoginSuccess' // TODO: channge to Bridge.receive
+const URL_RECEIVE = 'skp:Bridge.receive'
 
 const INPUT_FIELD_ID = 'Bridge.requestField'
 
