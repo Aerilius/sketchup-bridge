@@ -98,6 +98,8 @@ This library is stand-alone and focusses on Ruby↔JavaScript communication. It 
 3. In your html file, add a script tag that loads the file `bridge.js` (considering your own folder structure) like:  
    `<script src="bridge.js"></script>`
 
+If you use `npm`, you can also just add the package [`sketchup-bridge`](https://www.npmjs.com/package/sketchup-bridge) to your dependencies and build it into your extension's JavaScript bundle.
+
 ### Usage Example
 
 On the Ruby side:
