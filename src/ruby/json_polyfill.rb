@@ -32,7 +32,7 @@ class Bridge
         def self.generate(object)
           # Split at every even number of unescaped quotes. This gives either strings
           # or what is between strings.
-          object = self.traverse_object(object.clone){ |element| element.is_a?(Symbol) ? element.to_s : element }
+          object = traverse_object(object.clone){ |element| element.is_a?(Symbol) ? element.to_s : element }
           json_string = object.inspect.split(/("(?:\\"|[^"])*")/).
               map { |string|
             next string if string[0..0] == '"' # is a string in quotes
@@ -79,11 +79,11 @@ class Bridge
         # Traverses containers of a JSON-like object recursively and applies a code block
         def self.traverse_object(o, &block)
           if o.is_a?(Array)
-            return o.map{ |v| self.traverse_object(v) }
+            return o.map{ |v| traverse_object(v, &block) }
           elsif o.is_a?(Hash)
             o_copy = {}
             o.each{ |k, v|
-              o_copy[self.traverse_object(k)] = self.traverse_object(v)
+              o_copy[traverse_object(k, &block)] = traverse_object(v, &block)
             }
             return o_copy
           else
