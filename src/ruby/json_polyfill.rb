@@ -12,7 +12,7 @@ class Bridge
       # As a workaround, we use `load`.
       load 'json.rb' unless defined?(::JSON)
       # No support for option :quirks_mode ? Fallback to JSON implementation in this library.
-      raise(RuntimeError) unless ::JSON::VERSION_MAJOR >= 1 && ::JSON::VERSION_MINOR >= 6
+      raise(RuntimeError) unless ::JSON::VERSION_MAJOR >= 2 || (::JSON::VERSION_MAJOR >= 1 && ::JSON::VERSION_MINOR >= 6)
 
       module JSON
         def self.generate(object)
