@@ -77,7 +77,10 @@ class Bridge
           on_resolve = block
         end
       end
-      (unhandled_rejection(*@values); return self) if @state == State::REJECTED && !on_reject.respond_to?(:call)
+      if @state == State::REJECTED && !on_reject.respond_to?(:call)
+        unhandled_rejection(*@values)
+        return self
+      end
 
       next_promise = Promise.new { |resolve_next, reject_next| # Do not use self.class.new because a subclass may require arguments.
         @handlers << Handler.new(on_resolve, on_reject, resolve_next, reject_next)
@@ -133,7 +136,7 @@ class Bridge
           pending_counter = promises.length
           results = Array.new(promises.length)
           promises.each_with_index{ |promise, i|
-            if promise.respond_to?(:then)
+            if promise.is_a?(self.class)
               promise.then(Proc.new{ |result|
                 results[i] = result
                 pending_counter -= 1
@@ -156,7 +159,7 @@ class Bridge
       return Promise.reject(ArgumentError.new('Argument must be iterable')) unless promises.is_a?(Enumerable)
       return Promise.new{ |resolve, reject|
         promises.each{ |promise|
-          if promise.respond_to?(:then)
+          if promise.is_a?(self.class)
             promise.then(resolve, reject)
           else
             break resolve.call(promise) # non-Promise value
@@ -186,7 +189,7 @@ class Bridge
       # If this promise is resolved with another promise, the final results are not yet
       # known, so we we register this promise to be resolved once all results are resolved.
       raise TypeError.new('A promise cannot be resolved with itself.') if results.include?(self)
-      if results.find{ |r| r.respond_to?(:then) }
+      if results.find{ |r| r.is_a?(self.class) }
         self.class.all(results).then(Proc.new{ |results| resolve(*results) }, method(:reject))
         return nil
       end
@@ -226,7 +229,7 @@ class Bridge
       # known, so we we register this promise to be rejected once all reasons are resolved.
       raise(TypeError, 'A promise cannot be rejected with itself.') if reasons.include?(self)
       # TODO: reject should not do unwrapping according to https://github.com/getify/You-Dont-Know-JS/blob/master/async%20%26%20performance/ch3.md
-      #if reasons.find{ |r| r.respond_to?(:then) }
+      #if reasons.find{ |r| r.is_a?(self.class) }
       #  self.class.all(reasons).then(Proc.new{ |reasons| reject(*reasons) }, method(:reject))
       #  return
       #end
@@ -270,7 +273,7 @@ class Bridge
       defer{
         begin
           new_results = *reaction.call(*@values)
-          if new_results.find{ |r| r.respond_to?(:then) }
+          if new_results.find{ |r| r.is_a?(self.class) }
             self.class.all(new_results).then(Proc.new{ |results| on_success.call(*results) }, on_failure)
           elsif on_success.respond_to?(:call)
             on_success.call(*new_results)
@@ -286,7 +289,12 @@ class Bridge
 
     def unhandled_rejection(*reasons)
       reason = reasons.first
-      warn("Uncaught promise rejection with reason [#{reason.class}]: \"#{reason}\"")
+      if reason.respond_to?(:message) and reason.respond_to?(:backtrace)
+        reason_txt = "#{reason.message}\n#{reason.backtrace.join("\n")}"
+      else
+        reason_txt = reason
+      end
+      warn("Uncaught promise rejection with reason [#{reason.class}]: \"#{reason_txt}\"")
       if reason.is_a?(Exception) && reason.backtrace
         # Make use of the backtrace to point at the location of the uncaught rejection.
         filtered_backtrace = reason.backtrace.inject([]){ |lines, line|
