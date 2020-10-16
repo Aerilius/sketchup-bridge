@@ -8,7 +8,7 @@ GEM
   specs:
     minitest (5.14.2)
     rake (10.5.0)
-    rubyzip (1.2.2)
+    rubyzip (1.3.0)
     sketchup-api-stubs (0.4.0)
 
 PLATFORMS
