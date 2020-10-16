@@ -1,12 +1,12 @@
 PATH
   remote: .
   specs:
-    ae_sketchup_bridge (3.0.1)
+    ae_sketchup_bridge (3.0.4)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    minitest (5.11.3)
+    minitest (5.14.2)
     rake (10.5.0)
     rubyzip (1.2.2)
     sketchup-api-stubs (0.4.0)
@@ -23,4 +23,4 @@ DEPENDENCIES
   sketchup-api-stubs (~> 0)
 
 BUNDLED WITH
-   1.16.2
+   1.17.3
