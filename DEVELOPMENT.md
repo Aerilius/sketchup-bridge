@@ -28,7 +28,7 @@ Or open the file `src/spec/all-specs.html` in a browser.
 
 To release a new version, update the version number in `version.rb` and in `package.json`, and then run `npm run build_all`.
 
-Then publish the `tutorial*.rbz` in Extension Warehouse.
+Then publish the `ae_bridgelibrary*.rbz` in Extension Warehouse.
 And publish the JavaScript library on npm, so it can be directly used as dependency:
 ```
 npm publish
