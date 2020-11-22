@@ -11,7 +11,7 @@ var baseConfig = {
         test: /\.js$/,
         use: {
           loader: 'babel-loader',
-          query: {
+          options: {
             presets: ['es2015']
           }
         },
@@ -71,16 +71,18 @@ var standaloneLibraryConfig = Object.assign({}, baseConfig, {
     libraryTarget: 'umd',
   },
   plugins: [
-    new CopyPlugin([
-      {
-        from: path.resolve(__dirname, 'dist/bridge.js'),
-        to: path.resolve(__dirname, 'tutorial/ae_bridgelibrary/bridge.js')
-      },
-      {
-        from: path.resolve(__dirname, 'dist/bridge.js'),
-        to: path.resolve(__dirname, 'sample/sample_extension/js')
-      }
-    ]),
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'dist/bridge.js'),
+          to: path.resolve(__dirname, 'tutorial/ae_bridgelibrary/bridge.js')
+        },
+        {
+          from: path.resolve(__dirname, 'dist/bridge.js'),
+          to: path.resolve(__dirname, 'sample/sample_extension/js')
+        },
+      ],
+    }),
   ]
 });
 

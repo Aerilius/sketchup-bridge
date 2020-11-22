@@ -6,7 +6,7 @@ module AE
 
       class Bridge
 
-        VERSION = '3.0.4'.freeze unless defined?(self::VERSION)
+        VERSION = '3.0.5'.freeze unless defined?(self::VERSION)
 
       end
 
@@ -149,7 +149,7 @@ module AE
                 pending_counter = promises.length
                 results = Array.new(promises.length)
                 promises.each_with_index{ |promise, i|
-                  if promise.is_a?(self.class)
+                  if promise.is_a?(Promise)
                     promise.then(Proc.new{ |result|
                       results[i] = result
                       pending_counter -= 1
@@ -172,7 +172,7 @@ module AE
             return Promise.reject(ArgumentError.new('Argument must be iterable')) unless promises.is_a?(Enumerable)
             return Promise.new{ |resolve, reject|
               promises.each{ |promise|
-                if promise.is_a?(self.class)
+                if promise.is_a?(Promise)
                   promise.then(resolve, reject)
                 else
                   break resolve.call(promise) # non-Promise value
@@ -686,7 +686,7 @@ module AE
           # @param   parameter_string [String]
           def receive(action_context, parameter_string)
             # Get message data from the hidden input element.
-            value   = dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
+            value   = @dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
             request = Bridge::JSON.parse(value)
             handle_request(action_context, request)
           rescue Exception => error
