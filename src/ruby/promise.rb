@@ -136,7 +136,7 @@ class Bridge
           pending_counter = promises.length
           results = Array.new(promises.length)
           promises.each_with_index{ |promise, i|
-            if promise.is_a?(self.class)
+            if promise.is_a?(Promise)
               promise.then(Proc.new{ |result|
                 results[i] = result
                 pending_counter -= 1
@@ -159,7 +159,7 @@ class Bridge
       return Promise.reject(ArgumentError.new('Argument must be iterable')) unless promises.is_a?(Enumerable)
       return Promise.new{ |resolve, reject|
         promises.each{ |promise|
-          if promise.is_a?(self.class)
+          if promise.is_a?(Promise)
             promise.then(resolve, reject)
           else
             break resolve.call(promise) # non-Promise value
