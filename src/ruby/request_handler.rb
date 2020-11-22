@@ -102,7 +102,7 @@ class Bridge
     # @param   parameter_string [String]
     def receive(action_context, parameter_string)
       # Get message data from the hidden input element.
-      value   = dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
+      value   = @dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
       request = Bridge::JSON.parse(value)
       handle_request(action_context, request)
     rescue Exception => error
