@@ -60,7 +60,7 @@ describe('RequestHandler for HtmlDialog', () => {
   })
 
   describe('#send and #receive', () => {
-    it('should call the callback function when it receives a return message', done => {
+    it('should call the callback function when it receives a return message', (done) => {
       let message = {}
       let id = messageIdGenerator.current()
       let returnMessage = { success: true, parameters: ['arg0', 'arg1'] }
@@ -74,7 +74,7 @@ describe('RequestHandler for HtmlDialog', () => {
     })
   })
 
-  describe('#get', done => {
+  describe('#get', (done) => {
     it("should pass the JavaScript function's return value to the backend", () => {
       // Mocks
       let javaScriptFunctionResult = {}
@@ -100,7 +100,7 @@ describe('RequestHandler for HtmlDialog', () => {
       null
     })
 
-    it('should pass any error thrown by the JavaScript function to the backend', done => {
+    it('should pass any error thrown by the JavaScript function to the backend', (done) => {
       // Mocks
       let javaScriptFunctionError = new Error()
       let javaScriptFunction = chai.spy(() => {
@@ -134,7 +134,7 @@ describe('RequestHandler for HtmlDialog', () => {
         .finally(done)
     })
 
-    it('should pass an error to the backend when the JavaScript function was not found', done => {
+    it('should pass an error to the backend when the JavaScript function was not found', (done) => {
       // Mocks
       let id = messageIdGenerator.current()
       let expectedReturnMessage = {

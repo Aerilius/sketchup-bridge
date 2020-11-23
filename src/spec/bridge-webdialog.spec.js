@@ -65,7 +65,7 @@ describe('Bridge for WebDialog', () => {
       ;(typeof Bridge.call('aCallbackName') === 'undefined').should.be.true
     })
 
-    it('calls the HtmlDialog Ruby backend', done => {
+    it('calls the HtmlDialog Ruby backend', (done) => {
       webDialogRubyMock.expectToBeCalled(idGeneratorMock.current(), done)
       Bridge.call('aCallbackName', 1, 2)
     })
@@ -119,29 +119,29 @@ describe('Bridge for WebDialog', () => {
       Bridge.get('aCallbackName').should.be.a('promise')
     })
 
-    it('calls the HtmlDialog Ruby backend', done => {
+    it('calls the HtmlDialog Ruby backend', (done) => {
       webDialogRubyMock.expectToBeCalled(idGeneratorMock.current(), done)
       Bridge.get('aCallbackName', 1, 2)
     })
 
-    it('resolves the promise when the backend resolves', done => {
+    it('resolves the promise when the backend resolves', (done) => {
       let expected = 3
       webDialogRubyMock.expectResult(idGeneratorMock.current(), expected)
       Bridge.get('aCallbackName', 1, 2)
         .then(
-          result => expect(result).to.equal(expected),
-          error => expect.fail()
+          (result) => expect(result).to.equal(expected),
+          (error) => expect.fail()
         )
         .finally(done)
     })
 
-    it('rejects the promise when the backend rejects', done => {
+    it('rejects the promise when the backend rejects', (done) => {
       let expected = 'An error happened'
       webDialogRubyMock.expectError(idGeneratorMock.current(), expected)
       Bridge.get('aCallbackName', 1, 2)
         .then(
-          result => expect.fail(),
-          error => expect(error).to.equal(expected)
+          (result) => expect.fail(),
+          (error) => expect(error).to.equal(expected)
         )
         .finally(done)
     })

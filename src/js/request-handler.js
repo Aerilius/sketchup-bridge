@@ -94,13 +94,13 @@ export default class RequestHandler {
       let fn = resolveObjectPath(functionName)
       // For easier testing, return the promise (because it is asynchronous).
       // The returned promise is not supposed to be used anywhere else.
-      return new Promise(function(resolve, reject) {
+      return new Promise(function (resolve, reject) {
         // Call the requested JavaScript function.
         // It may either immediately return a result or a Promise.
         // TODO: If send is asynchronous as well, we need to wrap it into a promise and pass resolve/reject as callback
         resolve(fn.apply(undefined, parameters))
       }).then(
-        result => {
+        (result) => {
           return new Promise((resolve, reject) => {
             this.send(
               {
@@ -112,7 +112,7 @@ export default class RequestHandler {
             )
           })
         },
-        error => {
+        (error) => {
           if (error instanceof Error) {
             error = errorToJSON(error)
           }

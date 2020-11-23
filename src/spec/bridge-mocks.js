@@ -32,12 +32,12 @@ export class HtmlDialogRubyMock {
     return new Proxy(
       {}, // target: the proxy's state, here a cache for mocked callback functions
       {
-        get: function(target, prop, receiver) {
+        get: function (target, prop, receiver) {
           // Return a function that – when called – forwards prop and the parameters.
           // Create this function for each prop only once and cache it in target (the proxy's state).
           return (
             target[prop] ||
-            (target[prop] = function(...parameters) {
+            (target[prop] = function (...parameters) {
               console.log(
                 `         htmldialog bridge: ${prop} ${JSON.stringify(
                   parameters
