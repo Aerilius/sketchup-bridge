@@ -44,36 +44,23 @@ class Bridge
   def self.decorate(dialog)
     bridge = self.new(dialog)
     dialog.instance_variable_set(:@bridge, bridge)
+    class << dialog; attr_accessor :bridge; end
 
-    #[:on, :once, :off, :call, :get].each{ |method_name|
-    #  define_method on dialog that receives same parameters as bridge.method(method_name)
-    #}
-    def dialog.bridge
-      return @bridge
-    end
-
-    def dialog.on(name, &callback)
-      @bridge.on(name, &callback)
-      return self
-    end
-
-    def dialog.once(name, &callback)
-      @bridge.once(name, &callback)
-      return self
-    end
-
-    def dialog.off(name)
-      @bridge.off(name)
-      return self
-    end
-
-    def dialog.call(function, *parameters, &callback)
-      @bridge.call(function, *parameters, &callback)
-    end
-
-    def dialog.get(function, *parameters)
-      return @bridge.get(function, *parameters)
-    end
+    [:on, :once, :off, :call, :get].each{ |method_name|
+      dialog.class.send(
+        :define_method,
+        method_name,
+        Proc.new{ |*args, **kwargs, &block|
+          if kwargs.empty?
+            # In older Ruby versions, methods without keyword arguments receive
+            # empty **kwargs as positional argument {}, which causes ArgumentError (wrong numbe rof arguments).
+            @bridge.send(method_name, *args, &block)
+          else
+            @bridge.send(method_name, *args, **kwargs, &block)
+          end
+        }
+      )
+    }
 
     return dialog
   end
