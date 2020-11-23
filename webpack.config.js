@@ -2,6 +2,8 @@ const path = require('path')
 const webpack = require('webpack')
 const CopyPlugin = require('copy-webpack-plugin');
 const StyleLintPlugin = require('stylelint-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 var baseConfig = {
   mode: 'development',
@@ -12,8 +14,27 @@ var baseConfig = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['es2015']
-          }
+            presets: [
+              [
+                '@babel/env',
+                {
+                  'targets': {
+                    'ie': '11',
+                    'chrome': '52', // Chromium in Sketchup 2017
+                  },
+                  //'useBuiltIns': 'usage', // automatically include polyfills for used JavaScript features (e.g. Promise)
+                  'useBuiltIns': 'entry', // Not 'usage' because it significantly increases size.
+                  'corejs': 'core-js@3',
+                  'exclude': [
+                    '@babel/plugin-transform-regenerator', // This comes with Promise polyfill, but increases size. We don't need support for async/await.
+                  ],
+                },
+              ],
+            ],
+            plugins: [
+              '@babel/plugin-transform-runtime',
+            ],
+          },
         },
         exclude: /node_modules/
       }
@@ -34,7 +55,6 @@ var baseConfig = {
 
 var testConfig = Object.assign({}, baseConfig, {
   entry: [
-    'babel-polyfill',
     './spec/bridge-htmldialog.spec.js',
     './spec/bridge-webdialog.spec.js',
     './src/spec/bridge.spec.js',
@@ -49,7 +69,7 @@ var testConfig = Object.assign({}, baseConfig, {
 
 var compiledIntoAppConfig = Object.assign({}, baseConfig, {
   entry: [
-    'babel-polyfill',
+    'core-js/stable/promise', // Include Promise polyfill
     './src/js/main.js'
   ],
   output: {
@@ -60,7 +80,7 @@ var compiledIntoAppConfig = Object.assign({}, baseConfig, {
 
 var standaloneLibraryConfig = Object.assign({}, baseConfig, {
   entry: [
-    'babel-polyfill',
+    'core-js/stable/promise', // Include Promise polyfill
     './src/js/bridge.js'
   ],
   output: {
@@ -97,6 +117,19 @@ if (process.env.NODE_ENV === 'production') {
       moduleIds: 'named',
       chunkIds: 'named'
     });
+    config.plugins = config.plugins.concat([
+      new TerserPlugin({
+        terserOptions: {
+          ecma: 5,
+          mangle: {
+            reserved: ['Sketchup']
+          },
+          ie8: true,
+          //keep_classnames: true, // Not needed, it preserves names of public exports, e.g. Bridge.
+          //keep_fnames: true, // Not needed, it preserves names of public exports, functions of Bridge.
+        },
+      }, {}),
+    ]);
     return config;
   });
 } else {
