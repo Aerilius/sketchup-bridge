@@ -4,7 +4,7 @@ module AuthorName
 
     class Bridge
 
-      VERSION = '3.0.5'.freeze unless defined?(self::VERSION)
+      VERSION = '3.0.6'.freeze unless defined?(self::VERSION)
 
     end
 
@@ -200,8 +200,8 @@ module AuthorName
           # If this promise is resolved with another promise, the final results are not yet
           # known, so we we register this promise to be resolved once all results are resolved.
           raise TypeError.new('A promise cannot be resolved with itself.') if results.include?(self)
-          if results.find{ |r| r.is_a?(self.class) }
-            self.class.all(results).then(Proc.new{ |results| resolve(*results) }, method(:reject))
+          if results.find{ |r| r.is_a?(Promise) }
+            Promise.all(results).then(Proc.new{ |results| resolve(*results) }, method(:reject))
             return nil
           end
 
@@ -240,8 +240,8 @@ module AuthorName
           # known, so we we register this promise to be rejected once all reasons are resolved.
           raise(TypeError, 'A promise cannot be rejected with itself.') if reasons.include?(self)
           # TODO: reject should not do unwrapping according to https://github.com/getify/You-Dont-Know-JS/blob/master/async%20%26%20performance/ch3.md
-          #if reasons.find{ |r| r.is_a?(self.class) }
-          #  self.class.all(reasons).then(Proc.new{ |reasons| reject(*reasons) }, method(:reject))
+          #if reasons.find{ |r| r.is_a?(Promise) }
+          #  Promise.all(reasons).then(Proc.new{ |reasons| reject(*reasons) }, method(:reject))
           #  return
           #end
 
@@ -284,8 +284,8 @@ module AuthorName
           defer{
             begin
               new_results = *reaction.call(*@values)
-              if new_results.find{ |r| r.is_a?(self.class) }
-                self.class.all(new_results).then(Proc.new{ |results| on_success.call(*results) }, on_failure)
+              if new_results.find{ |r| r.is_a?(Promise) }
+                Promise.all(new_results).then(Proc.new{ |results| on_success.call(*results) }, on_failure)
               elsif on_success.respond_to?(:call)
                 on_success.call(*new_results)
               end
