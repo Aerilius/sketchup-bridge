@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['src']
 
   spec.add_development_dependency 'bundler', '~> 1.13'
-  spec.add_development_dependency 'rake', '~> 10.0'
+  spec.add_development_dependency 'rake', '~> 12.3'
   spec.add_development_dependency 'minitest', '~> 5.0'
   spec.add_development_dependency 'sketchup-api-stubs', '~> 0'
   spec.add_development_dependency 'rubyzip', '>= 1.0.0'
