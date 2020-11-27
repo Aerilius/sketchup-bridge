@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ae_sketchup_bridge (3.0.6)
+    ae_sketchup_bridge (3.0.7)
 
 GEM
   remote: https://rubygems.org/
