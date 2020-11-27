@@ -71,7 +71,18 @@ class Bridge
           raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
         end
         handler = @bridge.handlers[name]
-        handler.call(@dialog, *parameters)
+        begin
+          handler.call(@dialog, *parameters)
+        rescue NoMethodError => e
+          if e.message[/undefined method `resolve' for #<UI::(?:Web|Html)Dialog/]
+            raise(NoMethodError.new(
+              e.message +
+              "\nThe Ruby callback only receives a promise that can be resolved/rejected " +
+              "if it is called from JavaScript with Bridge.get('#{name}', …)"
+            ))
+          else
+            raise(e)
+          end
       end
     end
 
