@@ -155,6 +155,8 @@ if (isSketchUp()) {
   requestHandler = new BrowserPromptRequestHandler()
 }
 const Bridge = new BridgeClass(requestHandler)
-// Ensure the export is globally available sincerequired by SketchUp Bridge Ruby backend
+// Make Promise (evt. polyfilled) available under Bridge for consistency with Ruby code.
+Bridge.Promise = Promise
+// Ensure the export is globally available since required by SketchUp Bridge Ruby backend
 if (isSketchUp()) global.Bridge = Bridge
 export default Bridge
