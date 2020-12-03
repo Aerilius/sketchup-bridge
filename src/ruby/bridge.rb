@@ -145,6 +145,7 @@ class Bridge
   end
 
   # @private
+  attr_reader :dialog
   attr_reader :handlers
 
   private
@@ -157,7 +158,6 @@ class Bridge
   RESERVED_NAMES = []
   # Callback name where JavaScript messages are received.
   CALLBACKNAME = 'Bridge.receive'
-  attr_reader :dialog
 
   # Create an instance of the Bridge and associate it with a dialog.
   # @param dialog [UI::HtmlDialog, UI::WebDialog]
@@ -168,9 +168,9 @@ class Bridge
 
     if request_handler.nil?
       if defined?(UI::HtmlDialog) && dialog.is_a?(UI::HtmlDialog) # SketchUp 2017+
-        @request_handler = RequestHandlerHtmlDialog.new(dialog, self)
+        @request_handler = RequestHandlerHtmlDialog.new(self)
       else
-        @request_handler = RequestHandlerWebDialog.new(dialog, self)
+        @request_handler = RequestHandlerWebDialog.new(self)
       end
     else
       @request_handler = request_handler

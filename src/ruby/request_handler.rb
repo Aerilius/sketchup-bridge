@@ -20,21 +20,20 @@ class Bridge
   # @private
   class DialogRequestHandler < RequestHandler # abstract class
 
-    def initialize(dialog, bridge=nil)
+    def initialize(bridge=nil)
       super()
-      @dialog = dialog
       @bridge = bridge
     end
 
     def send(message)
       name = message[:name]
       parameters_string = Bridge::JSON.generate(message[:parameters])[1...-1]
-      @dialog.execute_script("#{name}(#{parameters_string})")
+      @bridge.dialog.execute_script("#{name}(#{parameters_string})")
     end
 
     private
 
-    def handle_request(action_context, request) # FIXME: Avoid access to Bridge @handlers and @dialog
+    def handle_request(action_context, request)
       unless request.is_a?(Hash) &&
           (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
           request['name'].is_a?(String) &&
@@ -51,11 +50,11 @@ class Bridge
       # later the result to the JavaScript callback even if the dialog has continued
       # sending/receiving messages.
       if request['expectsCallback']
-        response = ActionContext.new(@dialog, self, id)
+        response = ActionContext.new(@bridge.dialog, self, id)
         begin
           # Get the callback.
           unless @bridge.handlers.include?(name)
-            raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
+            raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
           end
           handler = @bridge.handlers[name]
           handler.call(response, *parameters)
@@ -68,11 +67,11 @@ class Bridge
       else
         # Get the callback.
         unless @bridge.handlers.include?(name)
-          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
+          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
         end
         handler = @bridge.handlers[name]
         begin
-          handler.call(@dialog, *parameters)
+          handler.call(@bridge.dialog, *parameters)
         rescue NoMethodError => e
           if e.message[/undefined method `resolve' for #<UI::(?:Web|Html)Dialog/]
             raise(NoMethodError.new(
@@ -113,7 +112,7 @@ class Bridge
     # @param   parameter_string [String]
     def receive(dialog, parameter_string)
       # Get message data from the hidden input element.
-      value   = @dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
+      value   = @bridge.dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
       request = Bridge::JSON.parse(value)
       handle_request(dialog, request)
     rescue Exception => error
