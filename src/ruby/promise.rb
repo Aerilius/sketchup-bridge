@@ -1,3 +1,5 @@
+require(File.expand_path('../utils.rb', __FILE__))
+
 class Bridge
 
   class Promise
@@ -295,20 +297,10 @@ class Bridge
         reason_txt = reason
       end
       warn("Uncaught promise rejection with reason [#{reason.class}]: \"#{reason_txt}\"")
-      if reason.is_a?(Exception) && reason.backtrace
-        # Make use of the backtrace to point at the location of the uncaught rejection.
-        filtered_backtrace = reason.backtrace.inject([]){ |lines, line|
-          break lines if line.match(__FILE__)
-          lines << line
-        }
-        location = filtered_backtrace.last[/[^\:]+\:\d+/] # /path/filename.rb:linenumber
-      else
-        filtered_backtrace = caller.inject([]){ |lines, line|
-          next lines if line.match(__FILE__)
-          lines << line
-        }
-        location = filtered_backtrace.first[/[^\:]+\:\d+/] # /path/filename.rb:linenumber
-      end
+      backtrace = (reason.is_a?(Exception) && reason.backtrace) ? reason.backtrace : caller
+      # Make use of the backtrace to point at the location of the uncaught rejection.
+      filtered_backtrace = Utils.filter_backtrace(backtrace, exclude_file=__FILE__)
+      location = filtered_backtrace.last[/[^\:]+\:\d+/] # /path/filename.rb:linenumber
       Kernel.warn(filtered_backtrace.join($/))
       Kernel.warn("Tip: Add a Promise#catch block to the promise after the block in #{location}")
     end

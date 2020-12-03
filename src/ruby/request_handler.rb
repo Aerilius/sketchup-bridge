@@ -51,14 +51,22 @@ class Bridge
       # sending/receiving messages.
       if request['expectsCallback']
         response = ActionContext.new(@bridge.dialog, self, id)
+        # Get the callback.
+        unless @bridge.handlers.include?(name)
+          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
+        end
+        handler = @bridge.handlers[name]
         begin
-          # Get the callback.
-          unless @bridge.handlers.include?(name)
-            raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
-          end
-          handler = @bridge.handlers[name]
           handler.call(response, *parameters)
         rescue Exception => error
+          # Filter the backtrace if the error was caused in the handler block in another script.
+          error.set_backtrace(
+            Utils.filter_backtrace(
+              error.backtrace,
+              exclude_file=__FILE__,
+              exclude_line_range=__LINE__-8..__LINE__-2
+            )
+          )
           # Reject the promise.
           response.reject(error)
           # Re-raise for logging.
@@ -72,16 +80,27 @@ class Bridge
         handler = @bridge.handlers[name]
         begin
           handler.call(@bridge.dialog, *parameters)
-        rescue NoMethodError => e
-          if e.message[/undefined method `resolve' for #<UI::(?:Web|Html)Dialog/]
-            raise(NoMethodError.new(
-              e.message +
+        rescue Exception => error
+          # Filter the backtrace if the error was caused in the handler block in another script.
+          error.set_backtrace(
+            Utils.filter_backtrace(
+              error.backtrace,
+              exclude_file=__FILE__,
+              exclude_line_range=__LINE__-8..__LINE__-2
+            )
+          )
+          if error.is_a?(NoMethodError) && error.message[/undefined method `resolve' for #<UI::(?:Web|Html)Dialog/]
+            new_error = NoMethodError.new(
+              error.message +
               "\nThe Ruby callback only receives a promise that can be resolved/rejected " +
               "if it is called from JavaScript with Bridge.get('#{name}', …)"
-            ))
+            )
+            new_error.set_backtrace(error.backtrace)
+            raise(new_error)
           else
-            raise(e)
+            raise(error)
           end
+        end
       end
     end
 
