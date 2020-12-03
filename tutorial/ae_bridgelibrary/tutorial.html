@@ -524,11 +524,9 @@ dialog.call(<span class="hljs-string">'entitySelected'</span>, entity_name, attr
 <pre><code class="lang-ruby hljs">changed_entity = <span class="hljs-string">'ComponentInstance#1'</span>
 attributes = {<span class="hljs-string">'lenx'</span>: <span class="hljs-number">71.0</span>, <span class="hljs-string">'leny'</span>: <span class="hljs-number">32.5</span>, <span class="hljs-string">'lenz'</span>: <span class="hljs-number">39.5</span>}
 dialog.get(<span class="hljs-string">'syncToServer'</span>, changed_entity, attributes).<span class="hljs-keyword">then</span>{ <span class="hljs-params">|server_response|</span>
-  puts(server_response[<span class="hljs-string">'body'</span>])
-  <span class="hljs-comment"># Do something with the result or continue in the plugin.</span>
-}.catch{
-  puts(server_response[<span class="hljs-string">'statusText'</span>])
-  <span class="hljs-comment"># Handle the error.</span>
+  <span class="hljs-constant">UI::Notification</span>.new(<span class="hljs-string">"MyExtension"</span>, server_response[<span class="hljs-string">'body'</span>]).show
+}.catch{ |server_response|
+  <span class="hljs-constant">UI::Notification</span>.new(<span class="hljs-string">"MyExtension"</span>, server_response[<span class="hljs-string">'statusText'</span>]).show
 }</code></pre>
 <pre><code class="lang-javascript hljs"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">syncToServer</span> (<span class="hljs-params">entityName, attributes</span>) </span>{
   <span class="hljs-comment">// Do something with the parameters, like sending a request to a remote server.</span>
