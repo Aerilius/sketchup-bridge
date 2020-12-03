@@ -111,11 +111,11 @@ class Bridge
     # @private Not for public use.
     # @param   dialog           [UI::WebDialog]
     # @param   parameter_string [String]
-    def receive(action_context, parameter_string)
+    def receive(dialog, parameter_string)
       # Get message data from the hidden input element.
       value   = @dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
       request = Bridge::JSON.parse(value)
-      handle_request(action_context, request)
+      handle_request(dialog, request)
     rescue Exception => error
       Utils.log_error(error)
     ensure
