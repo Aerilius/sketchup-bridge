@@ -296,8 +296,8 @@ dialog.on(<span class="hljs-string">'callback_name'</span>) { <span class="hljs-
               textarea2Error.value = '';
               Bridge.get('compute_result1', dividend, divisor).then(function (result) {
                 textarea2Result.value = JSON.stringify(result);
-              }, function (error) {
-                textarea2Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+              }, function (errorJson) {
+                textarea2Error.value = errorJson.name + ': ' + errorJson.message + (errorJson.stack ? '\n' + errorJson.stack : '');
               });
             });
             </script>
@@ -348,8 +348,8 @@ dialog.on(<span class="hljs-string">'callback_name'</span>) { <span class="hljs-
                 textarea3Error.value = '';
                 Bridge.get('compute_result2', number).then(function (result) {
                   textarea3Result.value = JSON.stringify(result);
-                }, function (error) {
-                textarea3Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+                }, function (errorString) {
+                  textarea3Error.value = errorString;
                 });
               });
             </script>
@@ -450,7 +450,13 @@ dialog.on(<span class="hljs-string">'callback_name'</span>) { <span class="hljs-
             myAsyncFunction(a, b).then(function (result) {
               textarea6Result.value = JSON.stringify(result);
             }, function (error) {
-              textarea6Error.value = String(error) + (error.stack ? '\n' + error.stack : '') ;
+              var errorMessage;
+              if (error.name && error.message) {
+                errorMessage = error.name + ': ' + error.message + (error.stack ? '\n' + error.stack : '');;
+              } else {
+                errorMessage = String(error);
+              }
+              textarea6Error.value = errorMessage;
             });
           });
           </script>
