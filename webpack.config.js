@@ -1,6 +1,6 @@
 const path = require('path')
 const webpack = require('webpack')
-const CopyPlugin = require('copy-webpack-plugin');
+const FileManagerPlugin = require('filemanager-webpack-plugin');
 const StyleLintPlugin = require('stylelint-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
@@ -90,18 +90,16 @@ var standaloneLibraryConfig = Object.assign({}, baseConfig, {
     libraryTarget: 'umd',
   },
   plugins: [
-    new CopyPlugin({
-      patterns: [
-        {
-          from: path.resolve(__dirname, 'dist/bridge.js'),
-          to: path.resolve(__dirname, 'tutorial/ae_bridgelibrary/bridge.js')
-        },
-        {
-          from: path.resolve(__dirname, 'dist/bridge.js'),
-          to: path.resolve(__dirname, 'sample/sample_extension/js')
-        },
-      ],
-    }),
+    new FileManagerPlugin({
+      events: {
+        onEnd: {
+          copy: [
+            {source: './dist/bridge.js', destination: './tutorial/ae_bridgelibrary/bridge.js'},
+            {source: './dist/bridge.js', destination: './sample/sample_extension/js/bridge.js'},
+          ]
+        }
+      }
+    })
   ]
 });
 
