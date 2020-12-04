@@ -300,9 +300,11 @@ class Bridge
       backtrace = (reason.is_a?(Exception) && reason.backtrace) ? reason.backtrace : caller
       # Make use of the backtrace to point at the location of the uncaught rejection.
       filtered_backtrace = Utils.filter_backtrace(backtrace, exclude_file=__FILE__)
-      location = filtered_backtrace.last[/[^\:]+\:\d+/] # /path/filename.rb:linenumber
-      Kernel.warn(filtered_backtrace.join($/))
-      Kernel.warn("Tip: Add a Promise#catch block to the promise after the block in #{location}")
+      unless filtered_backtrace.empty?
+        location = filtered_backtrace.last[/[^\:]+\:\d+/] # /path/filename.rb:linenumber
+        Kernel.warn(filtered_backtrace.join($/))
+        Kernel.warn("Tip: Add a Promise#catch block to the promise after the block in #{location}")
+      end
     end
 
     # Redefine the inspect method to give shorter output.
