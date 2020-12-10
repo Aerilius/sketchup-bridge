@@ -10,12 +10,12 @@ module AE
     module Tutorial
 
       # Create the extension.
-      ext = SketchupExtension.new('Bridge Library', File.join('ae_bridgelibrary', 'tutorial.rb'))
+      ext = SketchupExtension.new('Bridge Library', File.join('ae_bridgelibrary', 'tutorial'))
 
       # Attach some nice info.
       ext.creator     = 'Aerilius'
       ext.version     = AE::BridgeLibrary::Tutorial::Bridge::VERSION
-      ext.copyright   = '2015-2019, Andreas Eisenbarth'
+      ext.copyright   = '2015-2021, Andreas Eisenbarth'
       ext.description = 'A tutorial for the Bridge library that makes HtmlDialogs easy.'
 
       # Register and load the extension on startup.
