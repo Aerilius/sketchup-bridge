@@ -30,7 +30,7 @@ module AuthorName
         def self.filter_backtrace(backtrace, exclude_file, exclude_line_range=nil)
           return backtrace.inject([]){ |lines, line|
             line_number_match = line[/(?<=:)(\d+)(?=:)/]
-            if line.match(exclude_file) && (!exclude_line_range.nil? || line_number_match && exclude_line_range.include?(line_number_match.to_i))
+            if line.match(exclude_file) && (exclude_line_range.nil? || line_number_match && exclude_line_range.include?(line_number_match.to_i))
               break lines
             end
             lines << line
