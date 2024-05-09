@@ -44,36 +44,22 @@ class Bridge
   def self.decorate(dialog)
     bridge = self.new(dialog)
     dialog.instance_variable_set(:@bridge, bridge)
+    class << dialog; attr_accessor :bridge; end
 
-    #[:on, :once, :off, :call, :get].each{ |method_name|
-    #  define_method on dialog that receives same parameters as bridge.method(method_name)
-    #}
-    def dialog.bridge
-      return @bridge
-    end
-
-    def dialog.on(name, &callback)
-      @bridge.on(name, &callback)
-      return self
-    end
-
-    def dialog.once(name, &callback)
-      @bridge.once(name, &callback)
-      return self
-    end
-
-    def dialog.off(name)
-      @bridge.off(name)
-      return self
-    end
-
-    def dialog.call(function, *parameters, &callback)
-      @bridge.call(function, *parameters, &callback)
-    end
-
-    def dialog.get(function, *parameters)
-      return @bridge.get(function, *parameters)
-    end
+    [:on, :once, :off, :call, :get].each{ |method_name|
+      dialog.class.define_method(
+        method_name,
+        Proc.new{ |*args, **kwargs, &block|
+          if kwargs.empty?
+            # In older Ruby versions, methods without keyword arguments receive
+            # empty **kwargs as positional argument {}, which causes ArgumentError (wrong numbe rof arguments).
+            @bridge.send(method_name, *args, &block)
+          else
+            @bridge.send(method_name, *args, **kwargs, &block)
+          end
+        }
+      )
+    }
 
     return dialog
   end
@@ -127,7 +113,7 @@ class Bridge
   # @param *parameters [Array<Object>] An array of JSON-compatible objects
   # TODO: Catch JavaScript errors!
   def call(name, *parameters)
-    raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w\.]+$/]
+    raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w.]+$/]
     @request_handler.send({
       :name => name,
       :parameters => parameters
@@ -140,7 +126,7 @@ class Bridge
   # @param  *parameters   [Object]  An array of JSON-compatible objects
   # @return               [Promise]
   def get(function_name, *parameters)
-    raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w\.]+$/]
+    raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w.]+$/]
     return Promise.new { |resolve, reject|
       handler_name = create_unique_handler_name('resolve/reject')
       once(handler_name) { |action_context, success, *parameters|
@@ -158,6 +144,7 @@ class Bridge
   end
 
   # @private
+  attr_reader :dialog
   attr_reader :handlers
 
   private
@@ -170,7 +157,6 @@ class Bridge
   RESERVED_NAMES = []
   # Callback name where JavaScript messages are received.
   CALLBACKNAME = 'Bridge.receive'
-  attr_reader :dialog
 
   # Create an instance of the Bridge and associate it with a dialog.
   # @param dialog [UI::HtmlDialog, UI::WebDialog]
@@ -181,9 +167,9 @@ class Bridge
 
     if request_handler.nil?
       if defined?(UI::HtmlDialog) && dialog.is_a?(UI::HtmlDialog) # SketchUp 2017+
-        @request_handler = RequestHandlerHtmlDialog.new(dialog, self)
+        @request_handler = RequestHandlerHtmlDialog.new(self)
       else
-        @request_handler = RequestHandlerWebDialog.new(dialog, self)
+        @request_handler = RequestHandlerWebDialog.new(self)
       end
     else
       @request_handler = request_handler

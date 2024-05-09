@@ -20,21 +20,20 @@ class Bridge
   # @private
   class DialogRequestHandler < RequestHandler # abstract class
 
-    def initialize(dialog, bridge=nil)
+    def initialize(bridge=nil)
       super()
-      @dialog = dialog
       @bridge = bridge
     end
 
     def send(message)
       name = message[:name]
       parameters_string = Bridge::JSON.generate(message[:parameters])[1...-1]
-      @dialog.execute_script("#{name}(#{parameters_string})")
+      @bridge.dialog.execute_script("#{name}(#{parameters_string})")
     end
 
     private
 
-    def handle_request(action_context, request) # FIXME: Avoid access to Bridge @handlers and @dialog
+    def handle_request(action_context, request)
       unless request.is_a?(Hash) &&
           (defined?(Integer) ? request['id'].is_a?(Integer) : request['id'].is_a?(Fixnum)) &&
           request['name'].is_a?(String) &&
@@ -51,15 +50,23 @@ class Bridge
       # later the result to the JavaScript callback even if the dialog has continued
       # sending/receiving messages.
       if request['expectsCallback']
-        response = ActionContext.new(@dialog, self, id)
+        response = ActionContext.new(@bridge.dialog, self, id)
+        # Get the callback.
+        unless @bridge.handlers.include?(name)
+          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
+        end
+        handler = @bridge.handlers[name]
         begin
-          # Get the callback.
-          unless @bridge.handlers.include?(name)
-            raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
-          end
-          handler = @bridge.handlers[name]
           handler.call(response, *parameters)
         rescue Exception => error
+          # Filter the backtrace if the error was caused in the handler block in another script.
+          error.set_backtrace(
+            Utils.filter_backtrace(
+              error.backtrace,
+              exclude_file=__FILE__,
+              exclude_line_range=__LINE__-8..__LINE__-2
+            )
+          )
           # Reject the promise.
           response.reject(error)
           # Re-raise for logging.
@@ -68,10 +75,32 @@ class Bridge
       else
         # Get the callback.
         unless @bridge.handlers.include?(name)
-          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@dialog} found."))
+          raise(BridgeRemoteError.new("No registered callback `#{name}` for #{@bridge.dialog} found."))
         end
         handler = @bridge.handlers[name]
-        handler.call(@dialog, *parameters)
+        begin
+          handler.call(@bridge.dialog, *parameters)
+        rescue Exception => error
+          # Filter the backtrace if the error was caused in the handler block in another script.
+          error.set_backtrace(
+            Utils.filter_backtrace(
+              error.backtrace,
+              exclude_file=__FILE__,
+              exclude_line_range=__LINE__-8..__LINE__-2
+            )
+          )
+          if error.is_a?(NoMethodError) && error.message[/undefined method `resolve' for #<UI::(?:Web|Html)Dialog/]
+            new_error = NoMethodError.new(
+              error.message +
+              "\nThe Ruby callback only receives a promise that can be resolved/rejected " +
+              "if it is called from JavaScript with Bridge.get('#{name}', …)"
+            )
+            new_error.set_backtrace(error.backtrace)
+            raise(new_error)
+          else
+            raise(error)
+          end
+        end
       end
     end
 
@@ -100,11 +129,11 @@ class Bridge
     # @private Not for public use.
     # @param   dialog           [UI::WebDialog]
     # @param   parameter_string [String]
-    def receive(action_context, parameter_string)
+    def receive(dialog, parameter_string)
       # Get message data from the hidden input element.
-      value   = dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
+      value   = @bridge.dialog.get_element_value("#{NAMESPACE}.requestField") # returns empty string if element not found
       request = Bridge::JSON.parse(value)
-      handle_request(action_context, request)
+      handle_request(dialog, request)
     rescue Exception => error
       Utils.log_error(error)
     ensure

@@ -5,6 +5,10 @@ require 'pathname'
 require_relative 'tools/ruby_build_tools'
 require_relative 'src/ruby/version.rb'
 
+# Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
+# to allow pushing to a single host or delete this section to allow pushing to any host.
+ENV['gem_push'] = 'off'
+
 Rake::TestTask.new(:test) do |t|
   t.libs << 'test'
   t.libs << 'src'
@@ -28,7 +32,7 @@ task :build_sample_extension do
 end
 
 desc 'Builds tutorial files and builds extension (.rbz)'
-task :build_tutorial do
+task :build_tutorial_rbz do
   # Compile the bridge library files into a single bundle file
   concatenated = bundle_dependencies('src/ruby/bridge.rb')
   namespaced = wrap_in_namespace(concatenated, [{:module => 'AE'}, {:module => 'BridgeLibrary'}, {:module => 'Tutorial'}])

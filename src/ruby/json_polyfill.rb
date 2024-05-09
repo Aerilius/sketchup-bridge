@@ -12,7 +12,7 @@ class Bridge
       # As a workaround, we use `load`.
       load 'json.rb' unless defined?(::JSON)
       # No support for option :quirks_mode ? Fallback to JSON implementation in this library.
-      raise(RuntimeError) unless ::JSON::VERSION_MAJOR >= 1 && ::JSON::VERSION_MINOR >= 6
+      raise(RuntimeError) unless (::JSON::VERSION_MAJOR == 1 && ::JSON::VERSION_MINOR >= 6) or ::JSON::VERSION_MAJOR >= 2
 
       module JSON
         def self.generate(object)
@@ -30,9 +30,10 @@ class Bridge
       module JSON
 
         def self.generate(object)
+          object = traverse_object(object.clone){ |element| element.is_a?(Symbol) ? element.to_s : element }
+          reject_recursively!(object){ |element| !is_compatible?(element) }
           # Split at every even number of unescaped quotes. This gives either strings
           # or what is between strings.
-          object = traverse_object(object.clone){ |element| element.is_a?(Symbol) ? element.to_s : element }
           json_string = object.inspect.split(/("(?:\\"|[^"])*")/).
               map { |string|
             next string if string[0..0] == '"' # is a string in quotes
@@ -76,6 +77,12 @@ class Bridge
 
         private
 
+        JSON_COMPATIBLE_TYPES = [Array, FalseClass, Hash, Numeric, NilClass, String, Symbol, TrueClass]
+
+        def self.is_compatible?(o)
+          return JSON_COMPATIBLE_TYPES.any?{ |klass| o.is_a?(klass) }
+        end
+
         # Traverses containers of a JSON-like object recursively and applies a code block
         def self.traverse_object(o, &block)
           if o.is_a?(Array)
@@ -91,6 +98,22 @@ class Bridge
           end
         end
         private_class_method :traverse_object
+
+        def self.reject_recursively!(o, &block)
+          if o.is_a?(Array)
+            return o.reject!(&block).map{ |v| reject_recursively!(v, &block) }
+          elsif o.is_a?(Hash)
+            o.reject!{ |k, v|
+              block.call(k) || block.call(v)
+            }.map!{ |k, v|
+              reject_recursively!(v, &block)
+            }
+            return o_copy
+          else
+            return o
+          end
+        end
+        private_class_method :reject_recursively
 
       end # module JSON
 

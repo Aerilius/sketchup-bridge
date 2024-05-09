@@ -1,6 +1,6 @@
 {
   "name": "sketchup-bridge",
-  "version": "3.0.2",
+  "version": "3.0.7",
   "description": "A bidirectional communication system between WebDialogs and the SketchUp Ruby environment",
   "author": "Aerilius",
   "license": "MIT",
@@ -8,55 +8,66 @@
     "type": "git",
     "url": "git://github.com/Aerilius/sketchup-bridge.git"
   },
-  "main": "dist/bridge.js",
+  "main": "src/js/bridge.js",
   "scripts": {
-    "build_all": "npm run build && npm run build_ruby",
-    "build_only_library": "npm run build && bundle exec rake build_dist",
-    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
-    "build_ruby": "bundle exec rake build_dist build_sample_extension build_tutorial",
-    "dev": "cross-env NODE_ENV=development webpack --progress --hide-modules",
+    "build_all": "npm run build_javascript && npm run build_ruby",
+    "build": "cross-env NODE_ENV=production webpack --progress",
+    "build_javascript": "npm run build",
+    "build_ruby": "bundle exec rake build_dist build_sample_extension build_tutorial_rbz",
+    "dev": "cross-env NODE_ENV=development webpack --progress",
     "dev-server": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "test": "mocha build/spec.bundle.js",
-    "reformat": "prettier --write \"js/**/*.js\" \"spec/**/*.js\"",
+    "reformat": "prettier --write \"src/js/**/*.js\" \"src/spec/**/*.js\"",
     "lint": "eslint \"src/**/*.js\""
   },
   "files": [
-    "dist/bridge.js"
+    "src/js/bridge.js"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@babel/runtime": "^7.24.5",
+    "core-js": "^3.37.0"
+  },
   "devDependencies": {
-    "babel": "^6.23.0",
-    "babel-core": "^6.26.3",
-    "babel-loader": "^7.1.5",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2015": "^6.24.1",
-    "chai": "^4.2.0",
+    "@babel/cli": "^7.24.5",
+    "@babel/core": "^7.24.5",
+    "@babel/plugin-transform-runtime": "^7.24.3",
+    "@babel/preset-env": "^7.24.5",
+    "babel-loader": "^9.1.3",
+    "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
-    "chai-spies": "^1.0.0",
+    "chai-spies": "^1.1.0",
     "chai-subset": "^1.6.0",
-    "copy-webpack-plugin": "^5.0.2",
-    "cross-env": "^5.2.0",
-    "eslint": "^5.16.0",
-    "eslint-config-prettier": "^4.1.0",
-    "eslint-plugin-prettier": "^3.0.1",
-    "mocha": "^6.0.2",
-    "npm": "^6.9.0",
-    "prettier": "^1.16.4",
-    "stylelint": "^8.0.0",
-    "stylelint-webpack-plugin": "^0.10.5",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1"
+    "cross-env": "^7.0.3",
+    "eslint": "^9.2.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "filemanager-webpack-plugin": "^8.0.0",
+    "mocha": "^10.4.0",
+    "npm": "^10.7.0",
+    "prettier": "^3.2.5",
+    "stylelint": "^16.5.0",
+    "stylelint-webpack-plugin": "^5.0.0",
+    "terser-webpack-plugin": "^5.3.10",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
   },
   "babel": {
     "presets": [
       [
-        "env",
+        "@babel/env",
         {
-          "modules": false
+          "targets": {
+            "ie": "11",
+            "chrome": "52"
+          },
+          "useBuiltIns": "usage",
+          "corejs": "core-js@3"
         }
       ]
+    ],
+    "plugins": [
+      "@babel/plugin-transform-runtime"
     ]
   },
   "eslintConfig": {

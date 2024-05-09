@@ -17,7 +17,7 @@ module AE
         properties = {
           :dialog_title    => 'SketchUp Bridge Tutorial',
           :resizable       => true,
-          :width           => 700,
+          :width           => 800,
           :height          => 600,
           :left            => 200,
           :top             => 100,

@@ -5,18 +5,19 @@ function returnMockResult(message, mockCallbacks, callback) {
   if (typeof result.then === 'function') {
     // Promise for return value
     result.then(
-      result => {
+      (result) => {
         console.log(`[${message.name}] >> ${JSON.stringify(result)}`)
-        callback({success: true, parameters: [result]})
+        callback({ success: true, parameters: [result] })
       },
-      reason => {
+      (reason) => {
         console.log(`[${message.name}] >> (rejected) ${JSON.stringify(reason)}`)
-        callback({success: false, parameters: [reason]})
+        callback({ success: false, parameters: [reason] })
       }
     )
   } else {
     // Return value
-    if (typeof callback === 'function') callback({success: true, parameters: [result]})
+    if (typeof callback === 'function')
+      callback({ success: true, parameters: [result] })
     console.log('>> ' + JSON.stringify(result))
   }
 }
@@ -28,11 +29,12 @@ function runMockCallbackFunction(message, mockCallbacks, callback) {
       undefined,
       message.parameters
     )
-    if (typeof callback === 'function') callback({success: true, parameters: [result]})
+    if (typeof callback === 'function')
+      callback({ success: true, parameters: [result] })
     console.log('>> ' + JSON.stringify(result))
   } catch (error) {
     if (typeof callback === 'function') {
-      callback({success: false, parameters: [error]})
+      callback({ success: false, parameters: [error] })
     } else {
       console.error(error)
     }
@@ -46,10 +48,12 @@ function simulateGetWithPrompt(request, callback) {
   if (typeof resultString === 'string') {
     var result = JSON.parse(resultString)
     // Resolve the query and return the result to it.
-    if (typeof callback === 'function') callback({success: true, parameters: [result]})
+    if (typeof callback === 'function')
+      callback({ success: true, parameters: [result] })
   } else {
     // Otherwise reject the query.
-    if (typeof callback === 'function') callback({success: false, parameters: ['rejected']})
+    if (typeof callback === 'function')
+      callback({ success: false, parameters: ['rejected'] })
   }
 }
 

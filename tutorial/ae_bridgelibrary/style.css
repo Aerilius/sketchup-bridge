@@ -137,7 +137,16 @@ pre > code {
   font-weight: bold;
 }
 
-/* collapsible-section */
+.collapsible-section {
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+
+.collapsible-section.collapsed {
+  border: 1px solid transparent;
+}
+
+/* collapsible-section > */
 .collapsible-section.collapsed * {
   display: none;
 }
@@ -172,3 +181,5 @@ pre > code {
 .collapsible-section > h4:first-child:hover {
   cursor: pointer;
 }
+
+
