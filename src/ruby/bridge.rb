@@ -114,7 +114,7 @@ class Bridge
   # @param *parameters [Array<Object>] An array of JSON-compatible objects
   # TODO: Catch JavaScript errors!
   def call(name, *parameters)
-    raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w\.]+$/]
+    raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w.]+$/]
     @request_handler.send({
       :name => name,
       :parameters => parameters
@@ -127,7 +127,7 @@ class Bridge
   # @param  *parameters   [Object]  An array of JSON-compatible objects
   # @return               [Promise]
   def get(function_name, *parameters)
-    raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w\.]+$/]
+    raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w.]+$/]
     return Promise.new { |resolve, reject|
       handler_name = create_unique_handler_name('resolve/reject')
       once(handler_name) { |action_context, success, *parameters|
