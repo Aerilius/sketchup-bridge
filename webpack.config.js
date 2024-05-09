@@ -54,8 +54,7 @@ var baseConfig = {
 
 var testConfig = Object.assign({}, baseConfig, {
   entry: [
-    './spec/bridge-htmldialog.spec.js',
-    './spec/bridge-webdialog.spec.js',
+    './src/spec/bridge-htmldialog.spec.js',
     './src/spec/bridge.spec.js',
     './src/spec/requesthandler-htmldialog.spec.js',
     './src/spec/requesthandler-webdialog.spec.js'
@@ -69,7 +68,7 @@ var testConfig = Object.assign({}, baseConfig, {
 var compiledIntoAppConfig = Object.assign({}, baseConfig, {
   entry: [
     'core-js/stable/promise', // Include Promise polyfill
-    './src/js/main.js'
+    './src/interactive-test/main.js'
   ],
   output: {
     filename: 'main.bundle.js',

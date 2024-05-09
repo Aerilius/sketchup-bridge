@@ -49,9 +49,9 @@ export class HtmlDialogRubyMock {
                 that.called[id]()
               }
               if (id in that.errors) {
-                that.requestHandler.receive(id, that.errors[id])
+                that.requestHandler.receive(id, {success: false, parameters: [that.errors[id]]})
               } else {
-                that.requestHandler.receive(id, that.results[id])
+                that.requestHandler.receive(id, {success: true, parameters: [that.results[id]]})
               }
             })
           )
@@ -109,9 +109,9 @@ export class LocationMock {
       this.rubyMock.called[id]()
     }
     if (id in this.rubyMock.errors) {
-      this.rubyMock.requestHandler.receive(id, this.rubyMock.errors[id])
+      this.rubyMock.requestHandler.receive(id, {success: false, parameters: [this.rubyMock.errors[id]]})
     } else {
-      this.rubyMock.requestHandler.receive(id, this.rubyMock.results[id])
+      this.rubyMock.requestHandler.receive(id, {success: true, parameters: [this.rubyMock.results[id]]})
     }
   }
 }

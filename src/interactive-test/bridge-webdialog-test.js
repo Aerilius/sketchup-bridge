@@ -1,8 +1,8 @@
 /**
  * This test tests the Bridge class with a mocked WebDialog backend.
  */
-import { BridgeClass } from './bridge.js'
-import WebDialogRequestHandler from './request-handler-webdialog.js'
+import { BridgeClass } from '../js/bridge.js'
+import WebDialogRequestHandler from '../js/request-handler-webdialog.js'
 import {
   IdGeneratorMock,
   WebDialogRubyMock,
@@ -27,7 +27,7 @@ const webDialogRequestHandler = new WebDialogRequestHandler({
 webDialogRubyMock.requestHandler = webDialogRequestHandler
 const WebDialogBridge = new BridgeClass(webDialogRequestHandler)
 
-// Run tests
+// Run some tests
 webDialogRubyMock.expectResult(idGeneratorMock.current(), 6)
 WebDialogBridge.get('compute_sum', 4, 2).then(
   (result) => console.log(`webdialog bridge received result ${result}`),

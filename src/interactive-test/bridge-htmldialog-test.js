@@ -1,8 +1,8 @@
 /**
  * This test tests the Bridge class with a mocked HtmlDialog backend.
  */
-import { BridgeClass } from './bridge.js'
-import HtmlDialogRequestHandler from './request-handler-htmldialog.js'
+import { BridgeClass } from '../js/bridge.js'
+import HtmlDialogRequestHandler from '../js/request-handler-htmldialog.js'
 import { IdGeneratorMock, HtmlDialogRubyMock } from '../spec/bridge-mocks.js'
 
 const htmlDialogRubyMock = new HtmlDialogRubyMock()
@@ -17,7 +17,7 @@ const htmlDialogRequestHandler = new HtmlDialogRequestHandler({
 htmlDialogRubyMock.requestHandler = htmlDialogRequestHandler
 const HtmlDialogBridge = new BridgeClass(htmlDialogRequestHandler)
 
-// Run tests
+// Run some tests
 htmlDialogRubyMock.expectResult(idGeneratorMock.current(), 6)
 HtmlDialogBridge.get('compute_sum', 4, 2).then(
   (result) => console.log(`htmldialog bridge received result ${result}`),
