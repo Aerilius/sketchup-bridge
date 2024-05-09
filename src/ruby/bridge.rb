@@ -47,8 +47,7 @@ class Bridge
     class << dialog; attr_accessor :bridge; end
 
     [:on, :once, :off, :call, :get].each{ |method_name|
-      dialog.class.send(
-        :define_method,
+      dialog.class.define_method(
         method_name,
         Proc.new{ |*args, **kwargs, &block|
           if kwargs.empty?
