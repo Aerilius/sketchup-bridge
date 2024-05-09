@@ -32,7 +32,7 @@ task :build_sample_extension do
 end
 
 desc 'Builds tutorial files and builds extension (.rbz)'
-task :build_tutorial do
+task :build_tutorial_rbz do
   # Compile the bridge library files into a single bundle file
   concatenated = bundle_dependencies('src/ruby/bridge.rb')
   namespaced = wrap_in_namespace(concatenated, [{:module => 'AE'}, {:module => 'BridgeLibrary'}, {:module => 'Tutorial'}])
