@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git://github.com/Aerilius/sketchup-bridge.git"
   },
-  "main": "dist/bridge.js",
+  "main": "src/js/bridge.js",
   "scripts": {
     "build_all": "npm run build_javascript && npm run build_ruby",
     "build": "cross-env NODE_ENV=production webpack --progress",
@@ -21,7 +21,7 @@
     "lint": "eslint \"src/**/*.js\""
   },
   "files": [
-    "dist/bridge.js"
+    "src/js/bridge.js"
   ],
   "dependencies": {
     "@babel/runtime": "^7.24.5",
