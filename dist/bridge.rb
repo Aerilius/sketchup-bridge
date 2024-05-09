@@ -4,7 +4,7 @@ module AuthorName
 
     class Bridge
 
-      VERSION = '3.0.7'.freeze unless defined?(self::VERSION)
+      VERSION = '3.1.0'.freeze unless defined?(self::VERSION)
 
     end
 
@@ -779,8 +779,7 @@ module AuthorName
         class << dialog; attr_accessor :bridge; end
 
         [:on, :once, :off, :call, :get].each{ |method_name|
-          dialog.class.send(
-            :define_method,
+          dialog.class.define_method(
             method_name,
             Proc.new{ |*args, **kwargs, &block|
               if kwargs.empty?
@@ -846,7 +845,7 @@ module AuthorName
       # @param *parameters [Array<Object>] An array of JSON-compatible objects
       # TODO: Catch JavaScript errors!
       def call(name, *parameters)
-        raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w\.]+$/]
+        raise(ArgumentError, 'Argument `name` must be a valid method identifier string.') unless name.is_a?(String) && name[/^[\w.]+$/]
         @request_handler.send({
           :name => name,
           :parameters => parameters
@@ -859,7 +858,7 @@ module AuthorName
       # @param  *parameters   [Object]  An array of JSON-compatible objects
       # @return               [Promise]
       def get(function_name, *parameters)
-        raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w\.]+$/]
+        raise(ArgumentError, 'Argument `function_name` must be a valid method identifier string.') unless function_name.is_a?(String) && function_name[/^[\w.]+$/]
         return Promise.new { |resolve, reject|
           handler_name = create_unique_handler_name('resolve/reject')
           once(handler_name) { |action_context, success, *parameters|
