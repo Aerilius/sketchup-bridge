@@ -19,3 +19,6 @@ node_modules
 .yardoc
 doc
 
+# Exclude built SketchUp extension
+*.rbz
+
